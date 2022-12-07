@@ -1,0 +1,1 @@
+{"LicenseTextLink":"https://go.microsoft.com/fwlink/?linkid=2041178"}
