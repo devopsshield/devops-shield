@@ -1,4 +1,4 @@
-# Post Install Script to create App Registration for DevOps Shield App
+# Post Install Script to create App Registration for DevOps Shield
 
 ## Usage
 
