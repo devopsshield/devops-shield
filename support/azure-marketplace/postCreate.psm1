@@ -33,7 +33,10 @@ Function New-DevOpsShieldAppRegistrationPostCreate {
         [String]$DevOpsShieldOwnerObjectId,
 
         [PARAMETER(Mandatory = $False, Position = 3, HelpMessage = "Is App Registration Multi Tenant?")]
-        [bool]$IsMultiTenant = $False
+        [bool]$IsMultiTenant = $False,
+
+        [PARAMETER(Mandatory = $false, Position = 4, HelpMessage = "use sql azure ad")]
+        [bool]$UseSqlAzureAd = $false
     )
 
     $existingPackageJson = az managedapp show -g $ResourceGroupName -n $AppName
@@ -46,7 +49,27 @@ Function New-DevOpsShieldAppRegistrationPostCreate {
         $CustomerPrefix = $existingPackage.parameters.uniqueSuffix.value
         $Location = $existingPackage.location
         $tenantId = $existingPackage.parameters.tenant.value
+        $appVersion = $existingPackage.plan.version
+        $sqlServerName = $existingPackage.outputs.sqlServerName.value
+        $keyVaultName = $existingPackage.outputs.keyVaultName.value
+        if ($sqlServerName) {
+
+        }
+        else {
+            Write-Warning "need to calculate sql server name"
+            $sqlServerName = "sql-devopsshield${CustomerPrefix}${uniqueString}"
+    
+        }
+        $sqlDatabaseName = $existingPackage.outputs.sqlDatabaseName.value
+        if ($sqlDatabaseName) {
+
+        }
+        else {
+            Write-Warning "need to calculate sql database name"
+            $sqlDatabaseName = "sqldb-devopsshield"
+        }
         Write-Host found the app in mrg $managedResourceGroupName with customer prefix $CustomerPrefix and unique string $uniqueString
+        Write-Host app version is $appVersion
     }
     else {
         Write-Host please ensure there is a DevOps Shield Managed app $AppName in resource group $ResourceGroupName
@@ -80,6 +103,23 @@ Function New-DevOpsShieldAppRegistrationPostCreate {
     az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__Instance=$value4 --output none
     az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__TenantId=$value5 --output none
     
+    if ($UseSqlAzureAd) {
+        Write-Host touching sql by activating azure ad and config app setting
+        $msiobjectid = az webapp identity show --resource-group $managedResourceGroupName --name $webAppName --query principalId --output tsv
+        Write-Host msi object id is $msiobjectid
+        az sql server ad-admin create --display-name $webAppName --object-id $msiObjectId --resource-group $managedResourceGroupName --server $sqlServerName
+        Write-Host also change conn String
+        $newConnString = "Server=tcp:$sqlServerName.database.windows.net;Authentication=Active Directory Default; Database=$sqlDatabaseName;"
+        az webapp config connection-string set -g $managedResourceGroupName -n $webAppName -t sqlazure --settings ComplianceConnection=$newConnString # --output none
+    }
+    else {
+        Write-Host removing azure ad and going back to key vault ref
+        az sql server ad-admin delete --resource-group $managedResourceGroupName --server $sqlServerName
+        Write-Host also change conn String        
+        $newConnString = "@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/DevOpsShieldComplianceConnection)"
+        az webapp config connection-string set -g $managedResourceGroupName -n $webAppName -t sqlazure --settings ComplianceConnection=$newConnString # --output none
+    }
+
     Write-Host Restart web application
     az webapp restart --name $webAppName --resource-group $managedResourceGroupName
 

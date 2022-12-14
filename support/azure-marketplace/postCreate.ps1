@@ -32,11 +32,14 @@ Param(
     [String]$DevOpsShieldOwnerObjectId,
 
     [PARAMETER(Mandatory = $False, Position = 3, HelpMessage = "Is App Registration Multi Tenant?")]
-    [bool]$IsMultiTenant = $False
+    [bool]$IsMultiTenant = $False,
+
+    [PARAMETER(Mandatory = $false, Position = 4, HelpMessage = "use sql azure ad")]
+    [bool]$UseSqlAzureAd = $false
 )
     
 #sample call
-# .\postCreate.ps1 -ResourceGroup "rg-managedapps" -AppName "devopsshieldcxdev009"
+# .\postCreate.ps1 -ResourceGroup "rg-managedapps" -AppName "devopsshieldcxdev009" -UseSqlAzureAd $True
 
 Import-Module .\postCreate.psm1  -Force
-New-DevOpsShieldAppRegistrationPostCreate -ResourceGroup $ResourceGroup -AppName $AppName -DevOpsShieldOwnerObjectId $DevOpsShieldOwnerObjectId -IsMultiTenant $IsMultiTenant
+New-DevOpsShieldAppRegistrationPostCreate -ResourceGroup $ResourceGroup -AppName $AppName -DevOpsShieldOwnerObjectId $DevOpsShieldOwnerObjectId -IsMultiTenant $IsMultiTenant -UseSqlAzureAd $UseSqlAzureAd
