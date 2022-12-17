@@ -95,10 +95,30 @@ Function New-DevOpsShieldAppRegistrationPostCreate {
     $value2 = $retValueHashTableFromAppReg.ClientSecret    
     $value3 = $retValueHashTableFromAppReg.AzureAdDomain    
     $value4 = $retValueHashTableFromAppReg.AzureAdInstance    
-    $value5 = $retValueHashTableFromAppReg.TenantId    
+    $value5 = $retValueHashTableFromAppReg.TenantId 
+    
+    $useKeyVaultRefForSensitiveStrings = $True #should always be true
     
     az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__ClientId=$value1 --output none
-    az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__ClientCredentials__2__ClientSecret=$value2 --output none
+    if ($useKeyVaultRefForSensitiveStrings) {
+        $value2AsKeyRef = "@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/AZURE-AD-CLIENT-SECRET-FOR-OBO)"
+        az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__ClientCredentials__2__ClientSecret="`"$value2AsKeyRef`""
+        # also need to push secret to kv
+        if ($DevOpsShieldOwnerObjectId) {
+            $ObjectIdForSignedInUser = $DevOpsShieldOwnerObjectId  
+        }
+        else {
+            $ObjectIdForSignedInUser = $retValueHashTableFromAppReg.ObjectIdForSignedInUser 
+        }
+        
+        Write-Host "injecting secret AZURE-AD-CLIENT-SECRET-FOR-OBO into key vault through user $ObjectIdForSignedInUser"
+        az keyvault set-policy -n $keyVaultName --secret-permissions get list set --object-id $ObjectIdForSignedInUser
+        az keyvault secret set --name "AZURE-AD-CLIENT-SECRET-FOR-OBO" --vault-name $keyVaultName --value "${value2}" --output none;
+        az keyvault delete-policy -n $keyVaultName -g $managedResourceGroupName --object-id $ObjectIdForSignedInUser
+    }
+    else {        
+        az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__ClientCredentials__2__ClientSecret=$value2 --output none
+    }
     az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__Domain=$value3 --output none
     az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__Instance=$value4 --output none
     az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__TenantId=$value5 --output none
@@ -117,8 +137,15 @@ Function New-DevOpsShieldAppRegistrationPostCreate {
         az sql server ad-admin delete --resource-group $managedResourceGroupName --server $sqlServerName
         Write-Host also change conn String        
         $newConnString = "@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/DevOpsShieldComplianceConnection)"
-        az webapp config connection-string set -g $managedResourceGroupName -n $webAppName -t sqlazure --settings ComplianceConnection=$newConnString # --output none
+        #tricky: need to escape out double quotes in windows
+        az webapp config connection-string set -g $managedResourceGroupName -n $webAppName -t sqlazure --settings ComplianceConnection="`"$newConnString`""
     }
+
+    Write-Host "Finally we give new service principal access to key vault..."
+    az keyvault set-policy -n $keyVaultName --secret-permissions get list --spn $retValueHashTableFromAppReg.AppRegistrationId
+
+    Write-Warning "Please review settings above and ensure no secrets are visible - if so it is preferable to use key vault references."
+    Write-Host "You can use this script to rotate app registration secret if required"
 
     Write-Host Restart web application
     az webapp restart --name $webAppName --resource-group $managedResourceGroupName
