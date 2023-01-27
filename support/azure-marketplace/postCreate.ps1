@@ -21,25 +21,27 @@
 # SOFTWARE.
 
 Param( 
+    [PARAMETER(Mandatory = $True, Position = 0, HelpMessage = "Subscription name or id")]
+    [String]$Subscription,
 
-    [PARAMETER(Mandatory = $True, Position = 0, HelpMessage = "The Managed Resource Group Name that contains the DevOps Shield App created in the Azure Marketplace")]    
+    [PARAMETER(Mandatory = $True, Position = 1, HelpMessage = "The Managed Resource Group Name that contains the DevOps Shield App created in the Azure Marketplace")]    
     [String]$ResourceGroup,
     
-    [PARAMETER(Mandatory = $True, Position = 1, HelpMessage = "Managed App Name")]
+    [PARAMETER(Mandatory = $True, Position = 2, HelpMessage = "Managed App Name")]
     [String]$AppName,
     
-    [PARAMETER(Mandatory = $False, Position = 2, HelpMessage = "user object id to become devops shield owner - if not provided - signed-in user will be used")]
+    [PARAMETER(Mandatory = $False, Position = 3, HelpMessage = "user object id to become devops shield owner - if not provided - signed-in user will be used")]
     [String]$DevOpsShieldOwnerObjectId,
 
-    [PARAMETER(Mandatory = $False, Position = 3, HelpMessage = "Is App Registration Multi Tenant?")]
+    [PARAMETER(Mandatory = $False, Position = 4, HelpMessage = "Is App Registration Multi Tenant?")]
     [bool]$IsMultiTenant = $False,
 
-    [PARAMETER(Mandatory = $false, Position = 4, HelpMessage = "use sql azure ad")]
+    [PARAMETER(Mandatory = $false, Position = 5, HelpMessage = "use sql azure ad")]
     [bool]$UseSqlAzureAd = $false
 )
     
 #sample call
-# .\postCreate.ps1 -ResourceGroup "rg-managedapps" -AppName "devopsshieldcxdev009" -UseSqlAzureAd $True
+# .\postCreate.ps1 -Subscription "Dev" -ResourceGroup "rg-managedapps" -AppName "devopsshieldcxdev009" -UseSqlAzureAd $True
 
 Import-Module .\postCreate.psm1  -Force
-New-DevOpsShieldAppRegistrationPostCreate -ResourceGroup $ResourceGroup -AppName $AppName -DevOpsShieldOwnerObjectId $DevOpsShieldOwnerObjectId -IsMultiTenant $IsMultiTenant -UseSqlAzureAd $UseSqlAzureAd
+New-DevOpsShieldAppRegistrationPostCreate -Subscription "$Subscription" -ResourceGroup $ResourceGroup -AppName $AppName -DevOpsShieldOwnerObjectId $DevOpsShieldOwnerObjectId -IsMultiTenant $IsMultiTenant -UseSqlAzureAd $UseSqlAzureAd

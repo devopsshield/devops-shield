@@ -32,10 +32,13 @@ Function Get-UniqueString {
         [PARAMETER(Mandatory = $False, Position = 2, HelpMessage = "Temp Resource Group Name To Create - if not specified a random one will be created")]
         [String]$TempResourceGroup
     )
-    
-    $deploymentName = "getUniqueStringValue"
+
+    #$resourceGroupName = "rg-devopsshieldek010dev"
+    #$resourceGroupName = "mrg-devops-shield-preview-20221023235620" #e.g. for Marketplace deployment
+    #$utcValue = Get-Date
+    $deploymentName = "getUniqueStringVal_${ResourceGroupName}" #_${utcValue}".Replace('/', '_').Replace(':', '_').Replace(' ', '_')
     if ($TempResourceGroup) {
-        Write-Host temp resource group provided
+        Write-Host temp resource group $TempResourceGroup provided
         az deployment sub create --location $Location --name $deploymentName --template-file getUniqueString.bicep  --parameters resourceGroupName=$ResourceGroupName location=$Location tempResourceGroupName=$TempResourceGroup
     }
     else {
@@ -43,6 +46,7 @@ Function Get-UniqueString {
         az deployment sub create --location $Location --name $deploymentName --template-file getUniqueString.bicep  --parameters resourceGroupName=$ResourceGroupName location=$Location
     }
     $uniqueString = az deployment sub show -n $deploymentName --query properties.outputs.uniqueStringValue.value
+    $uniqueString = $uniqueString.Replace('"', '') #remove surrounding double quotes
     $tenantId = az deployment sub show -n $deploymentName --query properties.outputs.tenantId.value
     $tenantId = $tenantId.Replace('"', '') #remove surrounding double quotes
     $tempResourceGroupNameGenerated = az deployment sub show -n $deploymentName --query properties.outputs.tempResourceGroupNameGenerated.value
@@ -52,7 +56,9 @@ Function Get-UniqueString {
     Write-Host tenant id              : $tenantId
     Write-Host temp rg generated id   : $tempResourceGroupIdGenerated
     Write-Host temp rg generated name : $tempResourceGroupNameGenerated
-    
+    Write-Host deployment name        : $deploymentName
+    #sample output: "px732whbpsmgg" for azure marketplace example above
+
     $hashTable = @{ UniqueString = $uniqueString; TenantId = $tenantId; TempResourceGroupIdGenerated = $tempResourceGroupIdGenerated; TempResourceGroupNameGenerated = $tempResourceGroupNameGenerated; }
     return $hashTable
 }

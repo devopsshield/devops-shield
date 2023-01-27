@@ -26,31 +26,34 @@ Function New-DevOpsShieldAppRegistration {
 
         [PARAMETER(Mandatory = $True, Position = 0, HelpMessage = "The Managed Resource Group Name")]        
         [String]$ResourceGroupName,
-    
-        [PARAMETER(Mandatory = $True, Position = 1, HelpMessage = "Customer provided Unique Suffix")]
-        [ValidateLength(3, 8)]
-        [String]$CustomerPrefix,
 
-        [PARAMETER(Mandatory = $False, Position = 2, HelpMessage = "Azure Region")]
+        [PARAMETER(Mandatory = $True, Position = 1, HelpMessage = "Managed App Name")]
+        [String]$AppName,
+    
+        [PARAMETER(Mandatory = $False, Position = 2, HelpMessage = "Customer provided Unique Suffix")]
+        [ValidateLength(0, 8)]
+        [String]$CustomerPrefix = '',
+
+        [PARAMETER(Mandatory = $True, Position = 3, HelpMessage = "Azure Region")]
         [String]$Location,
 
-        [PARAMETER(Mandatory = $False, Position = 3, HelpMessage = "user object id to become devops shield owner")]
+        [PARAMETER(Mandatory = $False, Position = 4, HelpMessage = "user object id to become devops shield owner")]
         [String]$DevOpsShieldOwnerObjectId,
 
-        [PARAMETER(Mandatory = $False, Position = 4, HelpMessage = "Is App Registration Multi Tenant?")]
+        [PARAMETER(Mandatory = $False, Position = 5, HelpMessage = "Is App Registration Multi Tenant?")]
         [bool]$IsMultiTenant = $False,
 
-        [PARAMETER(Mandatory = $False, Position = 5, HelpMessage = "unique string if you know it")]
+        [PARAMETER(Mandatory = $False, Position = 6, HelpMessage = "unique string if you know it")]
         [string]$UniqueStringKnown,
 
-        [PARAMETER(Mandatory = $False, Position = 6, HelpMessage = "tenant id if you know it")]
+        [PARAMETER(Mandatory = $False, Position = 7, HelpMessage = "tenant id if you know it")]
         [string]$TenantIdKnown
     
     )
 
     #sample call .\createAppRegistration.ps1 -ResourceGroupName mrg-devops-shield-preview-20221023235620 -CustomerPrefix cxdev013 -Location "canadacentral"   
 
-    if ($UniqueStringKnown && $TenantIdKnown) {
+    if ($UniqueStringKnown -and $TenantIdKnown) {
         Write-Host let us save time since you provided the unique string and tenant
         $uniqueString = $UniqueStringKnown
         $tenantId = $TenantIdKnown
@@ -63,19 +66,20 @@ Function New-DevOpsShieldAppRegistration {
         $tenantId = $retValueHashTable.TenantId
     }
 
-    $appName = "devopsshield${CustomerPrefix}"
+    #$appName = "devopsshield${CustomerPrefix}"
+    $CustomerPrefix = $CustomerPrefix.Replace('"', '') #remove surrounding double quotes
     $appHomepage = "https://app-devopsshield${CustomerPrefix}${uniqueString}.azurewebsites.net" 
     $appReplyUrl1 = "https://app-devopsshield${CustomerPrefix}${uniqueString}.azurewebsites.net/signin-oidc"  
     $appReplyUrl2 = "https://app-devopsshield${CustomerPrefix}${uniqueString}.azurewebsites.net/signin-oidc-webapp"  
-    $appReplyUrl3 = "https://app-devopsshield${CustomerPrefix}${uniqueString}.azurewebsites.net/oidc-consent"
-    
+    $appReplyUrl3 = "https://app-devopsshield${CustomerPrefix}${uniqueString}.azurewebsites.net/oidc-consent" 
+
     Write-Host app home page is $appHomepage
     
     Write-Host "delete exisiting app registrations by the same name (if they exist)"
-    $currentAppRegs = az ad app list --display-name $appName
+    $currentAppRegs = az ad app list --display-name $AppName
     $currentAppRegsObject = $currentAppRegs | ConvertFrom-Json
-    $currentAppRegsObject | ForEach-Object -Process {        
-        if ($_.displayName -eq $appName) {
+    $currentAppRegsObject | ForEach-Object -Process {
+        if ($_.displayName -eq $AppName) {
             Write-Host found previous devopsshield app reg  $_.DisplayName with appId $_.appId
             Write-Host so will delete it
             az ad app delete --id $_.appId
@@ -93,7 +97,7 @@ Function New-DevOpsShieldAppRegistration {
     Write-Host $manifestJsonContent
     Set-Content -Path .\manifest.json -Value $manifestJsonContent
 
-    $app = az ad app create --display-name $appName --enable-access-token-issuance $false --enable-id-token-issuance $true --web-home-page-url $appHomepage --web-redirect-uris $appReplyUrl1 $appReplyUrl2 $appReplyUrl3 --app-roles manifest.json | ConvertFrom-Json
+    $app = az ad app create --display-name $AppName --enable-access-token-issuance $false --enable-id-token-issuance $true --web-home-page-url $appHomepage --web-redirect-uris $appReplyUrl1 $appReplyUrl2 $appReplyUrl3 --app-roles manifest.json | ConvertFrom-Json
     Write-Host Web App $app.appId Created.
 
     #cleanup
@@ -101,14 +105,14 @@ Function New-DevOpsShieldAppRegistration {
 
     Write-Host "Web App Updating..."
     # there is no CLI support for some properties, so we have to patch manually via az rest
-    $appPatchUri = "https://graph.microsoft.com/v1.0/applications/{0}" -f $app.id    
+    $appPatchUri = "https://graph.microsoft.com/v1.0/applications/{0}" -f $app.id
     $appPatchBody = '{\"web\":{\"logoutUrl\":\"https://app-devopsshieldSUFFIXTOREPLACE.azurewebsites.net/signout-oidc\"}}'
     $appPatchBody = $appPatchBody.Replace('SUFFIXTOREPLACE', "${CustomerPrefix}${uniqueString}")
-    az rest --method PATCH --uri $appPatchUri --headers 'Content-Type=application/json' --body $appPatchBody    
+    az rest --method PATCH --uri $appPatchUri --headers 'Content-Type=application/json' --body $appPatchBody
     $appPatchBody = '{\"info\":{\"supportUrl\": \"https://www.devopsshield.com/support\",\"privacyStatementUrl\": \"https://www.devopsshield.com/privacy\", \"termsOfServiceUrl\": \"https://www.devopsshield.com/termsOfService\", \"marketingUrl\": \"https://www.devopsshield.com/marketing\", \"logoUrl\": \"https://www.devopsshield.com/logo\"}}'
     Write-Host $appPatchBody
     az rest --method PATCH --uri $appPatchUri --headers 'Content-Type=application/json' --body $appPatchBody
-    
+
     if ($IsMultiTenant) {
         Write-Host Multitenant installation chosen
         $MyData = '{\"signInAudience\": \"AzureADMultipleOrgs\"}'
@@ -123,7 +127,7 @@ Function New-DevOpsShieldAppRegistration {
     #Run the following commands to create a new service principal for the Azure AD application.
 
     #Provide Application (client) Id
-    $appId = $app.appId    
+    $appId = $app.appId
 
     $appPostUri = "https://graph.microsoft.com/v1.0/servicePrincipals"
     $appPatchBody = '{\"appId\": \"APPIDTOREPLACE\"}'
@@ -191,6 +195,7 @@ Function New-DevOpsShieldAppRegistration {
     Write-Host enterprise app object id $enterpriseApp.id
     Write-Host azure ad instance "https://login.microsoftonline.com/"
     Write-Host azure ad domain $defaultTenant.id
+
 
     $hashTable = @{ AppRegistrationId = $app.appId; TenantId = $tenantId; EnterpriseAppObjectId = $enterpriseApp.id; AzureAdInstance = "https://login.microsoftonline.com/"; AzureAdDomain = $defaultTenant.id; ClientSecret = $clientSecret; ObjectIdForSignedInUser = $oidForCurrentUser; UniqueString = $uniqueString; }
     return $hashTable
