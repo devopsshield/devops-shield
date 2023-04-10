@@ -12,8 +12,8 @@ Download entire contents of this folder onto your device which contains these re
 
 Go into the downloaded folder then execute the following script:
 ```
-.\postCreate.ps1 -ResourceGroup "<YOUR-RESOURCE-GROUP-NAME-THAT-CONTAINS-THE-MANAGED-APP>" -AppName "<THE-MANAGED-APP-NAME>"
+.\postCreate.ps1 -Subscription "<YOUR-AZURE-SUBSCRIPTION>" -ResourceGroup "<YOUR-RESOURCE-GROUP-NAME-THAT-CONTAINS-THE-MANAGED-APP>" -AppName "<THE-MANAGED-APP-NAME>"
 
 # for example
-# .\postCreate.ps1 -ResourceGroup "rg-managedapps" -AppName "devopsshieldcxdev009"  
+# .\postCreate.ps1 -Subscription "IT Test" -ResourceGroup "rg-managedapps" -AppName "devopsshieldcxdev009"  
 ```
