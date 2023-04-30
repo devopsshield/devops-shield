@@ -1,0 +1,6 @@
+createAppRegistration.psm1
+getUniqueString.bicep
+getUniqueString.psm1
+manifest.template.json
+postCreate.ps1
+postCreate.psm1

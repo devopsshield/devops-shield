@@ -2,6 +2,24 @@
 
 ## Usage
 
+### Prerequisite
+
+You have already installed DevOps Shield from the Azure Marketplace
+
+Sample Installation:
+![image](https://user-images.githubusercontent.com/112144174/230929336-1e49f495-5e17-47fa-8313-9eba0717ec5d.png)
+
+### Automatic Method
+
+Open a PowerShell terminal and run the following commands from within a new or existing directory:
+```
+$installUri = "https://raw.githubusercontent.com/devopsshield/devops-shield/$Branch/support/azure-marketplace/Install-DevOpsShield-Tools.ps1"
+Invoke-WebRequest $installUri -OutFile "Install-DevOpsShield-Tools.ps1"
+.\Install-DevOpsShield-Tools.ps1
+```
+
+### Manual Method
+
 Download entire contents of this folder onto your device which contains these required files:
 - createAppRegistration.psm1
 - getUniqueString.bicep
@@ -9,9 +27,6 @@ Download entire contents of this folder onto your device which contains these re
 - manifest.template.json
 - postCreate.ps1
 - postCreate.psm1
-
-Sample Installation:
-![image](https://user-images.githubusercontent.com/112144174/230929336-1e49f495-5e17-47fa-8313-9eba0717ec5d.png)
 
 Go into the downloaded folder then execute the following script:
 ```
