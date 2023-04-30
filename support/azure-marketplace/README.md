@@ -13,7 +13,7 @@ Sample Installation:
 
 Open a PowerShell terminal and run the following commands from within a new or existing directory:
 ```
-$installUri = "https://raw.githubusercontent.com/devopsshield/devops-shield/$Branch/support/azure-marketplace/Install-DevOpsShield-Tools.ps1"
+$installUri = "https://raw.githubusercontent.com/devopsshield/devops-shield/main/support/azure-marketplace/Install-DevOpsShield-Tools.ps1"
 Invoke-WebRequest $installUri -OutFile "Install-DevOpsShield-Tools.ps1"
 .\Install-DevOpsShield-Tools.ps1
 ```
