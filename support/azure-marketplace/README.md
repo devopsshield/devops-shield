@@ -1,5 +1,5 @@
 # Welcome to DevOps Shield - Azure Marketplace - Post Installation Script
-> The following PowerShell script will complete the DevOps Shield application installation. It will register an application with Microsoft identity platform and update the DevOps Shield application settings required to complete the installation and configuration. Run the script below and your are minutes from completing a full DevOps security assessment.  
+> The following PowerShell script will complete the DevOps Shield application installation. It will register an application with Microsoft identity platform and update the DevOps Shield application settings required to complete the installation and configuration. Run the script below and you are minutes from completing a full DevOps security assessment.  
 
 ----
 ## Prerequisites
