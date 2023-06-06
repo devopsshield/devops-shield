@@ -1,37 +1,32 @@
-# Post Install Script to create App Registration for DevOps Shield
+# Welcome to DevOps Shield - Azure Marketplace - Post Installation Script
+> The following PowerShell script will complete the DevOps Shield application installation. It will register an application with Microsoft identity platform and update the DevOps Shield application settings required to complete the installation and configuration. Run the script below and your are minutes from completing a full DevOps security assessment.  
+
+----
+## Prerequisites
+
+- You have already installed DevOps Shield managed application from the Azure Marketplace.
+- Sample Installation:
+![image](https://user-images.githubusercontent.com/112144174/230929336-1e49f495-5e17-47fa-8313-9eba0717ec5d.png)
 
 ## Usage
 
-### Prerequisite
-
-You have already installed DevOps Shield from the Azure Marketplace
-
-Sample Installation:
-![image](https://user-images.githubusercontent.com/112144174/230929336-1e49f495-5e17-47fa-8313-9eba0717ec5d.png)
-
-### Automatic Method
-
-Open a PowerShell terminal and run the following commands from within a new or existing directory:
+- Open a PowerShell terminal, then copy and run the following command:
 ```
-$installUri = "https://raw.githubusercontent.com/devopsshield/devops-shield/main/support/azure-marketplace/Install-DevOpsShield-Tools.ps1"
-Invoke-WebRequest $installUri -OutFile "Install-DevOpsShield-Tools.ps1"
-.\Install-DevOpsShield-Tools.ps1
+Invoke-WebRequest "https://raw.githubusercontent.com/devopsshield/devops-shield/main/support/azure-marketplace/DevOpsShield-Marketplace-Post-Install-Script.ps1" -OutFile "DevOpsShield-Marketplace-Post-Install-Script.ps1"; Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass; .\DevOpsShield-Marketplace-Post-Install-Script.ps1
 ```
 
-### Manual Method
+### Steps:
+1. You will be asked to login using your Azure account that is allowed to register an application.
+2. You will be asked the information you have provided during the DevOps Shield installation (see image above for your reference).
+3. We will register an application with the Microsoft identity platform.
+4. We will update the DevOps Shield application settings.
+5. DevOps Shield is ready to use.
 
-Download entire contents of this folder onto your device which contains these required files:
-- createAppRegistration.psm1
-- getUniqueString.bicep
-- getUniqueString.psm1
-- manifest.template.json
-- postCreate.ps1
-- postCreate.psm1
+## Contact Us
+- https://www.devopsshield.com/contact
+- Feel free to contact us for assistance with the installation and configuration of the product at no cost.
 
-Go into the downloaded folder then execute the following script:
-```
-.\postCreate.ps1 -Subscription "<YOUR-AZURE-SUBSCRIPTION>" -ResourceGroup "<YOUR-RESOURCE-GROUP-NAME-THAT-CONTAINS-THE-MANAGED-APP>" -AppName "<THE-MANAGED-APP-NAME>"
+----
+Thank you for choosing DevOps Shield!
 
-# for example
-# .\postCreate.ps1 -Subscription "IT Test" -ResourceGroup "rg-managedapps" -AppName "devopsshieldtest"  
-```
+----
