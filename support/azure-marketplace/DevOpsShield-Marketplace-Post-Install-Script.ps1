@@ -61,7 +61,7 @@ Step 2: Please provide the following information about your DevOps Shield manage
 $Subscription = Read-Host -Prompt '1. Enter your Azure Subscription ID or Name'
 $ResourceGroupName = Read-Host -Prompt '2. Enter your Azure Resource Group (of your DevOps Shield managed application)'
 $AppName = Read-Host -Prompt '3. Enter your DevOps Shield managed application name'
-[ValidateSet('Y','N')]$MultiTenantYN = Read-Host -Prompt '4. Are you using DevOps Shield for Multitenant Azure DevOps (choose N for a Single tenant)? (Y/N)'
+[ValidateSet('Y', 'N')]$MultiTenantYN = Read-Host -Prompt '4. Are you using DevOps Shield for Multitenant Azure DevOps (choose N for a Single tenant)? (Y/N)'
 Write-Host '---------------------------------------------------------------------------------------------------------------'
 
 $IsMultiTenant = $MultiTenantYN -eq "Y"
@@ -82,9 +82,9 @@ Step 3: Register an application with the Microsoft identity platform for the fol
 - Multitenant:                              $($IsMultiTenant)
 ---------------------------------------------------------------------------------------------------------------"
 
-[ValidateSet('Y','N')]$ContinueYN = Read-Host -Prompt 'Please confirm the information above is correct and we can continue? (Y/N)'
+[ValidateSet('Y', 'N')]$ContinueYN = Read-Host -Prompt 'Please confirm the information above is correct and we can continue? (Y/N)'
 
-if ($ContinueYN -eq "N"){
+if ($ContinueYN -eq "N") {
     Write-Warning 'Please try again with the right information. Thank you!'
     return;
 }
@@ -106,7 +106,7 @@ if ($existingPackage) {
     $sqlServerName = $existingPackage.outputs.sqlServerName.value
     $keyVaultName = $existingPackage.outputs.keyVaultName.value
     if (!$sqlServerName) {
-        $sqlServerName = "sql-devopsshield${CustomerPrefix}${uniqueString}"
+        $sqlServerName = "sql-devopsshield-${CustomerPrefix}${uniqueString}"
     }
 
     $sqlDatabaseName = $existingPackage.outputs.sqlDatabaseName.value
@@ -116,24 +116,22 @@ if ($existingPackage) {
     
     Write-Host --> Found DevOps Shield application with version $appVersion in managed resource group $managedResourceGroupName
 }
-else 
-{
+else {
     Write-Error --> Please ensure there is a DevOps Shield managed application $AppName in your resource group $ResourceGroupName
     return;
 }
 
 $CustomerPrefix = $CustomerPrefix.Replace('"', '') #remove surrounding double quotes
-$appHomepage = "https://app-devopsshield${CustomerPrefix}${uniqueString}.azurewebsites.net" 
-$appReplyUrl1 = "https://app-devopsshield${CustomerPrefix}${uniqueString}.azurewebsites.net/signin-oidc"  
-$appReplyUrl2 = "https://app-devopsshield${CustomerPrefix}${uniqueString}.azurewebsites.net/signin-oidc-webapp"  
-$appReplyUrl3 = "https://app-devopsshield${CustomerPrefix}${uniqueString}.azurewebsites.net/oidc-consent" 
+$appHomepage = "https://app-devopsshield-${CustomerPrefix}${uniqueString}.azurewebsites.net" 
+$appReplyUrl1 = "https://app-devopsshield-${CustomerPrefix}${uniqueString}.azurewebsites.net/signin-oidc"  
+$appReplyUrl2 = "https://app-devopsshield-${CustomerPrefix}${uniqueString}.azurewebsites.net/signin-oidc-webapp"  
+$appReplyUrl3 = "https://app-devopsshield-${CustomerPrefix}${uniqueString}.azurewebsites.net/oidc-consent" 
 
 # Delete exisiting app registrations by the same name (if they exist)
 $currentAppRegs = az ad app list --display-name $AppName
 $currentAppRegsObject = $currentAppRegs | ConvertFrom-Json
 $currentAppRegsObject | ForEach-Object -Process {
-    if ($_.displayName -eq $AppName) 
-    {
+    if ($_.displayName -eq $AppName) {
         Write-Host --> Deleting the previous DevOps Shield application registration with name $_.DisplayName and id $_.appId
         az ad app delete --id $_.appId  --output none
     }
@@ -184,7 +182,7 @@ Remove-Item .\manifest.json
 
 # There is no CLI support for some properties, so we have to patch manually via az rest
 $appPatchUri = "https://graph.microsoft.com/v1.0/applications/{0}" -f $app.id
-$appPatchBody = '{\"web\":{\"logoutUrl\":\"https://app-devopsshieldSUFFIXTOREPLACE.azurewebsites.net/signout-oidc\"}}'
+$appPatchBody = '{\"web\":{\"logoutUrl\":\"https://app-devopsshield-SUFFIXTOREPLACE.azurewebsites.net/signout-oidc\"}}'
 $appPatchBody = $appPatchBody.Replace('SUFFIXTOREPLACE', "${CustomerPrefix}${uniqueString}")
 az rest --method PATCH --uri $appPatchUri --headers 'Content-Type=application/json' --body $appPatchBody  --output none
 $appPatchBody = '{\"info\":{\"supportUrl\": \"https://www.devopsshield.com/support\",\"privacyStatementUrl\": \"https://www.devopsshield.com/privacy\", \"termsOfServiceUrl\": \"https://www.devopsshield.com/termsOfService\", \"marketingUrl\": \"https://www.devopsshield.com/marketing\", \"logoUrl\": \"https://www.devopsshield.com/logo\"}}'
@@ -207,7 +205,7 @@ Write-Host '--> Creating the service principal for the registered application an
 $appId = $app.appId
 
 $appPostUri = "https://graph.microsoft.com/v1.0/servicePrincipals"
-$appPatchBody = '{\"appId\": \"APPIDTOREPLACE\"}'
+$appPatchBody = '{\"appId\": \"APPIDTOREPLACE\", \"appRoleAssignmentRequired\": true, \"tags\": [\"HideApp\"]}'
 $appPatchBody = $appPatchBody.Replace('APPIDTOREPLACE', $appId)
 $enterpriseApp = az rest --method POST --uri $appPostUri --headers 'Content-Type=application/json' --body $appPatchBody | ConvertFrom-Json
 
@@ -257,7 +255,7 @@ Step 4: Update DevOps Shield application settings and have it ready to use.
 - Key Vault & App Settings
 ---------------------------------------------------------------------------------------------------------------"
 
-$webAppName = "app-devopsshield${CustomerPrefix}${UniqueString}"
+$webAppName = "app-devopsshield-${CustomerPrefix}${UniqueString}"
     
 $value1 = $app.appId    
 $value2 = $clientSecret    
@@ -270,8 +268,7 @@ $useKeyVaultRefForSensitiveStrings = $True
     
 az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__ClientId=$value1 --output none
     
-if ($useKeyVaultRefForSensitiveStrings) 
-{
+if ($useKeyVaultRefForSensitiveStrings) {
     $value2AsKeyRef = "@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/AZURE-AD-CLIENT-SECRET-FOR-OBO)"
     az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__ClientCredentials__2__ClientSecret="`"$value2AsKeyRef`""  --output none
    
@@ -282,18 +279,13 @@ if ($useKeyVaultRefForSensitiveStrings)
     az keyvault secret set --name "AZURE-AD-CLIENT-SECRET-FOR-OBO" --vault-name $keyVaultName --value "${value2}" --output none;
     az keyvault delete-policy -n $keyVaultName -g $managedResourceGroupName --object-id $ObjectIdForSignedInUser  --output none
 }
-else 
-{        
+else {        
     az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__ClientCredentials__2__ClientSecret=$value2 --output none
 }
 
 az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__Domain=$value3 --output none
 az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__Instance=$value4 --output none
 az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__TenantId=$value5 --output none
-  
-# Connection String
-$newConnString = "@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/DevOpsShieldComplianceConnection)"
-az webapp config connection-string set -g $managedResourceGroupName -n $webAppName -t sqlazure --settings ComplianceConnection="`"$newConnString`""  --output none
 
 # Finally we give new service principal access to key vault...
 az keyvault set-policy -n $keyVaultName --secret-permissions get list --spn $app.appId --output none
