@@ -185,7 +185,7 @@ $appPatchUri = "https://graph.microsoft.com/v1.0/applications/{0}" -f $app.id
 $appPatchBody = '{\"web\":{\"logoutUrl\":\"https://app-devopsshield-SUFFIXTOREPLACE.azurewebsites.net/signout-oidc\"}}'
 $appPatchBody = $appPatchBody.Replace('SUFFIXTOREPLACE', "${CustomerPrefix}${uniqueString}")
 az rest --method PATCH --uri $appPatchUri --headers 'Content-Type=application/json' --body $appPatchBody  --output none
-$appPatchBody = '{\"info\":{\"supportUrl\": \"https://www.devopsshield.com/support\",\"privacyStatementUrl\": \"https://www.devopsshield.com/privacy\", \"termsOfServiceUrl\": \"https://www.devopsshield.com/termsOfService\", \"marketingUrl\": \"https://www.devopsshield.com/marketing\", \"logoUrl\": \"https://www.devopsshield.com/logo\"}}'
+$appPatchBody = '{\"info\":{\"supportUrl\": \"https://www.devopsshield.com/contact\",\"privacyStatementUrl\": \"https://www.devopsshield.com/product-privacypolicy\", \"termsOfServiceUrl\": \"https://www.devopsshield.com/product-termsandconditions\", \"marketingUrl\": \"https://www.devopsshield.com/solution\", \"logoUrl\": \"https://www.devopsshield.com/images/logo-icon.png\"}}'
 az rest --method PATCH --uri $appPatchUri --headers 'Content-Type=application/json' --body $appPatchBody  --output none
 
 if ($IsMultiTenant) {
@@ -199,6 +199,29 @@ az rest --method PATCH --uri $appPatchUri --headers 'Content-Type=application/js
 Write-Host --> App Registration $app.appId created for DevOps Shield application: $appHomepage
 
 Write-Host '--> Configuring the registered application'
+
+# DOS LOGO
+Try {
+    Write-Host '--> Updating the application logo.'
+
+    Invoke-WebRequest -Uri "https://www.devopsshield.com/images/logo-icon.png" -OutFile "DevOpsShield-Logo.png"
+    
+    $logoToken = (az account get-access-token --resource "https://graph.windows.net") | ConvertFrom-Json
+    $bearerToken = $logoToken.accessToken
+
+    $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+    $headers.Add("Authorization", "Bearer ${bearerToken}")
+    $headers.Add("Content-Type", "image/png")
+
+    $appPutMainLogoUri = "https://graph.windows.net/${tenantId}/applications/$($app.id)/mainLogo?api-version=1.6"
+
+    Invoke-RestMethod $appPutMainLogoUri -Method 'PUT' -Headers $headers -Infile '.\DevOpsShield-Logo.png' 
+} Catch {
+    Write-Host '--> An error occurred while setting the application logo.'
+} Finally {
+    Remove-Item '.\DevOpsShield-Logo.png'
+}
+
 Write-Host '--> Creating the service principal for the registered application and add the API permissions.'
 #Run the following commands to create a new service principal for the Azure AD application.
 #Provide Application (client) Id
@@ -293,6 +316,8 @@ az keyvault set-policy -n $keyVaultName --secret-permissions get list --spn $app
 Write-Host '--> Final Step: Restarting the DevOps Shield application...'
 az webapp restart --name $webAppName --resource-group $managedResourceGroupName --output none
 
+Start-Sleep -Seconds 30
+
 $websiteUrl = az webapp show --name $webAppName --resource-group $managedResourceGroupName --query defaultHostName
 $websiteUrl = $websiteUrl.Replace('"', '')
 
@@ -317,3 +342,10 @@ Email: contact@devopsshield.com
 
 Feel free to contact us for assistance with the installation and configuration of the product at no cost.
 ---------------------------------------------------------------------------------------------------------------"
+
+# LOGOUT
+Write-Host 'Logging out from your Azure account using az logout / az account clear ...'
+Write-Host ''
+
+az logout --only-show-errors
+az account clear
