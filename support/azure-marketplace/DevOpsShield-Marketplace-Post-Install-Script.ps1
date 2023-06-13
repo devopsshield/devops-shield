@@ -216,9 +216,11 @@ Try {
     $appPutMainLogoUri = "https://graph.windows.net/${tenantId}/applications/$($app.id)/mainLogo?api-version=1.6"
 
     Invoke-RestMethod $appPutMainLogoUri -Method 'PUT' -Headers $headers -Infile '.\DevOpsShield-Logo.png' 
-} Catch {
+}
+Catch {
     Write-Host '--> An error occurred while setting the application logo.'
-} Finally {
+}
+Finally {
     Remove-Item '.\DevOpsShield-Logo.png'
 }
 
@@ -283,32 +285,25 @@ $webAppName = "app-devopsshield-${CustomerPrefix}${UniqueString}"
 $value1 = $app.appId    
 $value2 = $clientSecret    
 $value3 = $defaultTenant.id    
-$value4 = "https://login.microsoftonline.com/"    
+#$value4 = "https://login.microsoftonline.com/"    
 $value5 = $tenantId
 
-# should always be true
-$useKeyVaultRefForSensitiveStrings = $True 
-    
-az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__ClientId=$value1 --output none
-    
-if ($useKeyVaultRefForSensitiveStrings) {
-    $value2AsKeyRef = "@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/AZURE-AD-CLIENT-SECRET-FOR-OBO)"
-    az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__ClientCredentials__2__ClientSecret="`"$value2AsKeyRef`""  --output none
-   
-    $ObjectIdForSignedInUser = $oidForCurrentUser 
-    
-    # Injecting secret AZURE-AD-CLIENT-SECRET-FOR-OBO into key vault through user $ObjectIdForSignedInUser
-    az keyvault set-policy -n $keyVaultName --secret-permissions get list set --object-id $ObjectIdForSignedInUser  --output none
-    az keyvault secret set --name "AZURE-AD-CLIENT-SECRET-FOR-OBO" --vault-name $keyVaultName --value "${value2}" --output none;
-    az keyvault delete-policy -n $keyVaultName -g $managedResourceGroupName --object-id $ObjectIdForSignedInUser  --output none
-}
-else {        
-    az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__ClientCredentials__2__ClientSecret=$value2 --output none
-}
+$azureAdClientSecretKeyVaultSecretName = 'AzureAd-ClientCredentials-ClientSecret'
+$azureAdClientIdKeyVaultSecretName = 'AzureAd-ClientId'
+$azureAdTenantIdKeyVaultSecretName = 'AzureAd-TenantId'
+$azureAdDomainKeyVaultSecretName = 'AzureAd-Domain'
+#$azureAdInstanceKeyVaultSecretName = 'AzureAd-Instance'
 
-az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__Domain=$value3 --output none
-az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__Instance=$value4 --output none
-az webapp config appsettings set -g $managedResourceGroupName -n $webAppName --settings AzureAd__TenantId=$value5 --output none
+$ObjectIdForSignedInUser = $oidForCurrentUser 
+    
+# Injecting secrets into key vault through user $ObjectIdForSignedInUser
+az keyvault set-policy -n $keyVaultName --secret-permissions get list set --object-id $ObjectIdForSignedInUser  --output none
+az keyvault secret set --name $azureAdClientIdKeyVaultSecretName --vault-name $keyVaultName --value "${value1}" --output none;
+az keyvault secret set --name $azureAdClientSecretKeyVaultSecretName --vault-name $keyVaultName --value "${value2}" --output none;
+az keyvault secret set --name $azureAdDomainKeyVaultSecretName --vault-name $keyVaultName --value "${value3}" --output none;
+#az keyvault secret set --name $azureAdInstanceKeyVaultSecretName --vault-name $keyVaultName --value "${value4}" --output none;
+az keyvault secret set --name $azureAdTenantIdKeyVaultSecretName --vault-name $keyVaultName --value "${value5}" --output none;
+az keyvault delete-policy -n $keyVaultName -g $managedResourceGroupName --object-id $ObjectIdForSignedInUser  --output none
 
 # Finally we give new service principal access to key vault...
 az keyvault set-policy -n $keyVaultName --secret-permissions get list --spn $app.appId --output none
