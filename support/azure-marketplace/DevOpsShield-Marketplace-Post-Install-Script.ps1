@@ -311,10 +311,14 @@ az keyvault set-policy -n $keyVaultName --secret-permissions get list --spn $app
 Write-Host '--> Final Step: Restarting the DevOps Shield application...'
 az webapp restart --name $webAppName --resource-group $managedResourceGroupName --output none
 
-Start-Sleep -Seconds 30
-
 $websiteUrl = az webapp show --name $webAppName --resource-group $managedResourceGroupName --query defaultHostName
 $websiteUrl = $websiteUrl.Replace('"', '')
+
+Write-Host '--> Waiting for the application to be ready...'
+Start-Sleep -Seconds 15
+$homepage = Invoke-WebRequest -Uri "https://$($websiteUrl)"
+Start-Sleep -Seconds 55
+$homepage = Invoke-WebRequest -Uri "https://$($websiteUrl)"
 
 # FINAL STEP
 Write-Host 
