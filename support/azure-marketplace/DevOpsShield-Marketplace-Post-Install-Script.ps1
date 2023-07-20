@@ -315,10 +315,14 @@ $websiteUrl = az webapp show --name $webAppName --resource-group $managedResourc
 $websiteUrl = $websiteUrl.Replace('"', '')
 
 Write-Host '--> Waiting for the application to be ready...'
-Start-Sleep -Seconds 15
-$homepage = Invoke-WebRequest -Uri "https://$($websiteUrl)"
-Start-Sleep -Seconds 55
-$homepage = Invoke-WebRequest -Uri "https://$($websiteUrl)"
+Try {
+    Start-Sleep -Seconds 15
+    $homepage = Invoke-WebRequest -Uri "https://$($websiteUrl)"
+    Start-Sleep -Seconds 55
+    $homepage = Invoke-WebRequest -Uri "https://$($websiteUrl)"
+Catch {
+    Write-Host '--> An error occurred while restarting the application.'
+}
 
 # FINAL STEP
 Write-Host 
