@@ -320,6 +320,7 @@ Try {
     $homepage = Invoke-WebRequest -Uri "https://$($websiteUrl)"
     Start-Sleep -Seconds 55
     $homepage = Invoke-WebRequest -Uri "https://$($websiteUrl)"
+}
 Catch {
     Write-Host '--> An error occurred while restarting the application.'
 }
