@@ -8,11 +8,12 @@
 
 ## Who we are
 
-> DevOps Shield - Your Business. We Protect It. Our mission is to empower and protect every organization with innovative cybersecurity for DevOps. 
-*   Improve your DevOps security governance. 
-*   Reduce exposure to possible DevOps cyberattacks.
-*   Solve rising security and DevOps misconfiguration concerns.
-*   Generate DevOps security assessment reports.
+> DevOps Shield - Your Business. We Protect It. Our mission is to empower and protect every organization with innovative cybersecurity for DevOps.
+
+- Improve your DevOps security governance.
+- Reduce exposure to possible DevOps cyberattacks.
+- Solve rising security and DevOps misconfiguration concerns.
+- Generate DevOps security assessment reports.
 
 DevOps Shield fills the gap between the DevSecOps and Cloud security governance solutions by hardening your DevOps platform configuration and remediating non-compliant resources.
 
