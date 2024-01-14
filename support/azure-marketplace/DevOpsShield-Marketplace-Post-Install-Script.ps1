@@ -287,12 +287,14 @@ $value2 = $clientSecret
 $value3 = $defaultTenant.id    
 #$value4 = "https://login.microsoftonline.com/"    
 $value5 = $tenantId
+$value6 = "Microsoft"
 
 $azureAdClientSecretKeyVaultSecretName = 'AzureAd-ClientCredentials-ClientSecret'
 $azureAdClientIdKeyVaultSecretName = 'AzureAd-ClientId'
 $azureAdTenantIdKeyVaultSecretName = 'AzureAd-TenantId'
 $azureAdDomainKeyVaultSecretName = 'AzureAd-Domain'
 #$azureAdInstanceKeyVaultSecretName = 'AzureAd-Instance'
+$dosPlanIdentityProviderKeyVaultSecretName = 'DOSPlan-IdentityProvider'
 
 $ObjectIdForSignedInUser = $oidForCurrentUser 
     
@@ -303,6 +305,9 @@ az keyvault secret set --name $azureAdClientSecretKeyVaultSecretName --vault-nam
 az keyvault secret set --name $azureAdDomainKeyVaultSecretName --vault-name $keyVaultName --value "${value3}" --output none;
 #az keyvault secret set --name $azureAdInstanceKeyVaultSecretName --vault-name $keyVaultName --value "${value4}" --output none;
 az keyvault secret set --name $azureAdTenantIdKeyVaultSecretName --vault-name $keyVaultName --value "${value5}" --output none;
+# Update the DevOps Shield Plan Identity Provider
+az keyvault secret set --name $dosPlanIdentityProviderKeyVaultSecretName --vault-name $keyVaultName --value "${value6}" --output none;
+
 az keyvault delete-policy -n $keyVaultName -g $managedResourceGroupName --object-id $ObjectIdForSignedInUser  --output none
 
 # Finally we give new service principal access to key vault...

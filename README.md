@@ -7,3 +7,7 @@
 ## Azure Marketplace Support
 
 For Azure Marketplace support please follow the guide from [here](https://github.com/devopsshield/devops-shield/tree/main/support/azure-marketplace).
+
+## Docker Hub Support
+
+For Docker Hub support please follow the guide from [here](https://github.com/devopsshield/devops-shield/tree/main/support/docker-hub).
