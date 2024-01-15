@@ -5,6 +5,8 @@
 - Where to get help:  
   - [Resource Center](https://www.devopsshield.com/resources)
   - [Contact Us](https://www.devopsshield.com/contact)
+- Report any issues:
+  - [GitHub Issues](https://github.com/devopsshield/devops-shield/issues)
 
 ## Who we are
 
