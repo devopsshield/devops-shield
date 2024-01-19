@@ -7,6 +7,8 @@
   - [Contact Us](https://www.devopsshield.com/contact)
 - Report any issues:
   - [GitHub Issues](https://github.com/devopsshield/devops-shield/issues)
+- Videos:
+  - [YouTube](https://youtu.be/N00IR_WImN8)
 
 ## Who we are
 
@@ -128,7 +130,7 @@ You can currently export to JSON or CSV the following reports:
 
 ## Video Walkthrough
 
-Click here for video instructions.
+Click [here](https://youtu.be/N00IR_WImN8) for video instructions.
 
 ## DevOps Shield in the Azure Marketplace
 
