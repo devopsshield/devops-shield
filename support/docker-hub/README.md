@@ -8,7 +8,7 @@
 - Report any issues:
   - [GitHub Issues](https://github.com/devopsshield/devops-shield/issues)
 - Videos:
-  - [YouTube](https://youtu.be/N00IR_WImN8)
+  - [Installation Guide](https://youtu.be/N00IR_WImN8)
 
 ## Who we are
 
