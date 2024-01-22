@@ -9,6 +9,8 @@
   - [GitHub Issues](https://github.com/devopsshield/devops-shield/issues)
 - Videos:
   - [Installation Guide](https://youtu.be/N00IR_WImN8)
+- Docker Hub:
+  - [DevOps Shield Community Edition](https://hub.docker.com/r/devopsshield/devopsshield)
 
 ## Who we are
 
