@@ -106,7 +106,57 @@ xdg-open http://localhost:8080
 
 ## Detailed Instructions using Azure (Web App for Containers)
 
-Coming Soon!
+1. Login to the [Azure Portal](https://portal.azure.com) and click on Create a Resource
+![Create a resource in azure portal](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/Login-to-Azure-click-create-a-resource.png)
+2. Search for **Web App for Containers** and click on the tile
+![Choose Web App for Containers](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/Search-for-web-app-for-containers.png)
+3. Click on Create
+![click on create](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/Click-on-create.png)
+4. Enter instance details such as:
+
+- Subscription
+- Resource Group
+- Web App Name
+- Region
+
+![enter instance details](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/select-instance-details.png)
+
+Ensure you pick a **Linux** Plan as well as set Publish to **Docker Container**.
+
+5. Select the Docker Tab (or click Next 3 times) and enter the following information:
+
+![docker settings](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/docker-tab.png)
+
+Ensure you enter **devopsshield/devopsshield** for the Image and tag.
+
+6. Click on Review and Create then on Create.
+
+![click on create](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/review-and-create.png)
+
+7. Once deployment is done, click on Go to resource
+
+![click on go to resource](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/click-on-go-to-resource.png)
+
+8. Now click on configuration to add an app setting mapping the website port to 8080 (see [Default ASP.NET Core port changed from 80 to 8080](https://learn.microsoft.com/en-us/dotnet/core/compatibility/containers/8.0/aspnet-port))
+
+![click on configuration](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/click-on-configuration.png)
+
+9. Add the setting then click OK
+
+![add the setting](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/add-websites-port-8080.png)
+
+10. Click on Save to restart webapp
+
+![save to restart](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/click-on-save-to-restart-app.png)
+
+11. Browse to the app by clicking on default domain in Overview Page
+
+![click on default domain in overview](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/click-on-default-domain.png)
+
+12. Follow the post install steps
+
+![follow post install steps](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/post-install-steps.png)
+
 
 ## DevOps Assessments
 
