@@ -1,3 +1,19 @@
+# Table of Contents
+
+- [Quick Start](#quick-start)
+  - [Who we are](#who-we-are)
+  - [How to use this image](#how-to-use-this-image)
+  - [Video Walkthrough](#video-walkthrough)
+  - [DevOps Shield in the Azure Marketplace](#devops-shield-in-the-azure-marketplace)
+  - [License](#license)
+- [Detailed Instructions using Docker Desktop GUI](#detailed-instructions-using-docker-desktop-gui)
+  - [Installation Prerequisites](#installation-prerequisites)
+  - [Install Steps](#install-steps)
+  - [Configuration Prerequisites](#configuration-prerequisites)
+  - [Config Steps](#config-steps)
+- [Detailed Instructions using Azure (Web App for Containers)](#detailed-instructions-using-azure-web-app-for-containers)
+- [DevOps Assessments](#devops-assessments)
+
 # Quick Start
 
 - Maintained by:
@@ -14,7 +30,7 @@
 
 ## Who we are
 
-> DevOps Shield - Your Business. We Protect It. Our mission is to empower and protect every organization with innovative cybersecurity for DevOps.
+DevOps Shield - Your Business. We Protect It. Our mission is to empower and protect every organization with innovative cybersecurity for DevOps.
 
 - Improve your DevOps security governance.
 - Reduce exposure to possible DevOps cyberattacks.
@@ -55,13 +71,27 @@ xdg-open http://localhost:8080
 
 3. Log in with username **devopsshield** and password **devopsshield**. You will then be prompted to change your password.
 
-## Detailed Instructions using Docker Desktop GUI
+## Video Walkthrough
 
-### Installation Prerequisites
+Click [here](https://youtu.be/N00IR_WImN8) for video instructions.
+
+## DevOps Shield in the Azure Marketplace
+
+Alternatively, you can try it for FREE in the [Azure Marketplace](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/cad4devopsinc1662079207461.devops-shield?src=website&mktcmpid=header).
+
+## License
+
+**DevOps Shield Community Edition** is licensed under the [DevOps Shield proprietary license](https://www.devopsshield.com/termsofuse). Copyright (c) CAD4DevOps Inc. (DevOps Shield). All rights reserved.
+
+---
+
+# Detailed Instructions using Docker Desktop GUI
+
+## Installation Prerequisites
 
 - Docker Desktop for [Windows](https://docs.docker.com/desktop/install/windows-install/), [Linux](https://docs.docker.com/desktop/install/linux-install/), or [Mac](https://docs.docker.com/desktop/install/mac-install/)
 
-### Install Steps
+## Install Steps
 
 1. Open Docker Desktop, click on Images, then Search Images to Run
 ![Docker Hub Click on Search Images to Run](https://github.com/devopsshield/devops-shield/raw/main/media/images/install/01-docker-hub-search-images-to-run.png)
@@ -80,7 +110,7 @@ xdg-open http://localhost:8080
 1. Change default password
 ![change password](https://github.com/devopsshield/devops-shield/raw/main/media/images/install/08-change-password.png)
 
-### Configuration Prerequisites
+## Configuration Prerequisites
 
 1. Obtain a Full Scoped Personal Access Token (PAT) for the Azure DevOps Organization to assess (see [Use personal access tokens](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate))
 ![get full pat token](https://github.com/devopsshield/devops-shield/raw/main/media/images/config/04-generate-full-pat-token-for-azure-devops-organization-to-assess.png)
@@ -89,7 +119,7 @@ xdg-open http://localhost:8080
 1. Obtain the Microsoft Entra ID (aka Azure Active Directory Tenant ID) associated to the Azure DevOps Organization you chose to assess (see [Connect your organization to Microsoft Entra ID](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/connect-organization-to-azure-ad))
 ![get microsoft entra id](https://github.com/devopsshield/devops-shield/raw/main/media/images/config/03-microsoft-entra-id-for-azure-devops-organization.png)
 
-### Config Steps
+## Config Steps
 
 1. In the app, click on setup configuration
 ![setup configuration](https://github.com/devopsshield/devops-shield/raw/main/media/images/config/01-click-on-setup-configuration.png)
@@ -104,7 +134,7 @@ xdg-open http://localhost:8080
 1. Depending on how large your Azure DevOps organization is, it may take minutes to finish. In our case, it took about 5 minutes to complete.
 ![wait for tasks to finish](https://github.com/devopsshield/devops-shield/raw/main/media/images/config/08-assessment-scan-completed.png)
 
-## Detailed Instructions using Azure (Web App for Containers)
+# Detailed Instructions using Azure (Web App for Containers)
 
 1. Login to the [Azure Portal](https://portal.azure.com) and click on Create a Resource
 ![Create a resource in azure portal](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/Login-to-Azure-click-create-a-resource.png)
@@ -157,8 +187,7 @@ Ensure you enter **devopsshield/devopsshield** for the Image and tag.
 
 ![follow post install steps](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/post-install-steps.png)
 
-
-## DevOps Assessments
+# DevOps Assessments
 
 Once an assessment has been done, you can view a full history of all assessments done by clicking on DevOps Assessments
 ![click on DevOps Assessments](https://github.com/devopsshield/devops-shield/raw/main/media/images/assessments/01-click-on-devops-assessments.png)
@@ -179,15 +208,3 @@ You can currently export to JSON or CSV the following reports:
 - Resource Inventory
 
 - Security Permissions
-
-## Video Walkthrough
-
-Click [here](https://youtu.be/N00IR_WImN8) for video instructions.
-
-## DevOps Shield in the Azure Marketplace
-
-Alternatively, you can try it for FREE in the [Azure Marketplace](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/cad4devopsinc1662079207461.devops-shield?src=website&mktcmpid=header).
-
-## License
-
-**DevOps Shield Community Edition** is licensed under the [DevOps Shield proprietary license](https://www.devopsshield.com/termsofuse). Copyright (c) CAD4DevOps Inc. (DevOps Shield). All rights reserved.
