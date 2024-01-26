@@ -9,9 +9,11 @@
 - [Detailed Instructions using Docker Desktop GUI](#detailed-instructions-using-docker-desktop-gui)
   - [Installation Prerequisites](#installation-prerequisites)
   - [Install Steps](#install-steps)
+  - [First Login for DevOps Shield](#first-login-for-devops-shield)
   - [Configuration Prerequisites](#configuration-prerequisites)
   - [Config Steps](#config-steps)
 - [Detailed Instructions using Azure (Web App for Containers)](#detailed-instructions-using-azure-web-app-for-containers)
+- [Detailed Instructions using AWS (Amazon Lightsail)](#detailed-instructions-using-aws-amazon-lightsail)
 - [DevOps Assessments](#devops-assessments)
 
 # Quick Start
@@ -103,6 +105,9 @@ Alternatively, you can try it for FREE in the [Azure Marketplace](https://azurem
 ![add host port](https://github.com/devopsshield/devops-shield/raw/main/media/images/install/04-add-host-port-in-optional-settings-then-click-on-run.png)
 1. Now browse to the app at <http://localhost:8080> or simply click on the hyperlink below
 ![browse localhost on port 8080](https://github.com/devopsshield/devops-shield/raw/main/media/images/install/05-click-on-browse-port-8080-on-localhost.png)
+
+## First Login for DevOps Shield
+
 1. Login to the app by clicking login button on top right
 ![click on login button](https://github.com/devopsshield/devops-shield/raw/main/media/images/install/06-click-on-login-button.png)
 1. Log in with username **devopsshield** and password **devopsshield**. You will then be prompted to change your password.
@@ -186,6 +191,38 @@ Ensure you enter **devopsshield/devopsshield** for the Image and tag.
 12. Follow the post install steps
 
 ![follow post install steps](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/post-install-steps.png)
+
+# Detailed Instructions using AWS (Amazon Lightsail)
+
+1. Sign in to the [Lightsail console](https://lightsail.aws.amazon.com/). On the Lightsail home page, choose the Containers tab and click on Create container service.
+![click on containers in overview](https://github.com/devopsshield/devops-shield/raw/main/media/images/aws/install/Login-to-Amazon-Lightsail-and-click-on-containers.png)
+1. In the Create a container service page, choose Change AWS Region, then choose an AWS Region for your container service. Choose a capacity for your container service.
+![choose region and capacity](https://github.com/devopsshield/devops-shield/raw/main/media/images/aws/install/Select-AWS-Region-and-choose-container-service-capacity.png)
+1. Click on Setup Deployment and Specify a custom deployment. Enter the following information:
+
+- Container name: Container names must contain only alphanumeric characters and hyphens. A hyphen (-) can separate words but cannot be at the start or end of the name.
+- Image: **devopsshield/devopsshield**
+- Open Ports: **8080 (HTTP)**
+- Public Endpoint: select the container name above
+
+![enter deployment information](https://github.com/devopsshield/devops-shield/raw/main/media/images/aws/install/setup-first-deployment.png)
+
+4. Identify your service and create it!
+The name of your container service must be unique within each AWS Region in your Lightsail account. It must also be lower-case, and DNS-compliant.
+
+![identify service](https://github.com/devopsshield/devops-shield/raw/main/media/images/aws/install/identify-service-and-create-it.png)
+
+5. Wait for the deployment to complete (may take a few minutes...)
+
+![wait for deployment to complete](https://github.com/devopsshield/devops-shield/raw/main/media/images/aws/install/wait-for-deployment-to-complete.png)
+
+6. Once your deployment is done, browse your new instance!
+
+![deployment is done](https://github.com/devopsshield/devops-shield/raw/main/media/images/aws/install/browse-your-new-instance.png)
+
+7. Click on public domain link above and start your first DevOps assessment!
+
+![login-and-configure](https://github.com/devopsshield/devops-shield/raw/main/media/images/aws/install/login-to-configure-as-above.png)
 
 # DevOps Assessments
 
