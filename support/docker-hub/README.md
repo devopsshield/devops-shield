@@ -17,7 +17,7 @@
 - [Detailed Instructions using GCP (Cloud Run)](#detailed-instructions-using-gcp-cloud-run)
 - [DevOps Assessments](#devops-assessments)
 
-# Quick Start
+<h1 id="quick-start">Quick Start</h1>
 
 - Maintained by:
   - [DevOps Shield](https://www.devopsshield.com)
@@ -31,7 +31,7 @@
 - Docker Hub:
   - [DevOps Shield Community Edition](https://hub.docker.com/r/devopsshield/devopsshield)
 
-## Who we are
+<h2 id="who-we-are">Who we are</h2>
 
 DevOps Shield - Your Business. We Protect It. Our mission is to empower and protect every organization with innovative cybersecurity for DevOps.
 
@@ -44,7 +44,7 @@ DevOps Shield fills the gap between the DevSecOps and Cloud security governance 
 
 ![logo](https://www.devopsshield.com/images/logo.png)
 
-## How to use this image
+<h2 id="how-to-use-this-image">How to use this image</h2>
 
 Here you'll find the Docker image for the Community Edition of DevOps Shield.
 
@@ -74,27 +74,27 @@ xdg-open http://localhost:8080
 
 3. Log in with username **devopsshield** and password **devopsshield**. You will then be prompted to change your password.
 
-## Video Walkthrough
+<h2 id="video-walkthrough">Video Walkthrough</h2>
 
 Click [here](https://youtu.be/N00IR_WImN8) for video instructions.
 
-## DevOps Shield in the Azure Marketplace
+<h2 id="#devops-shield-in-the-azure-marketplace">DevOps Shield in the Azure Marketplace</h2>
 
 Alternatively, you can try it for FREE in the [Azure Marketplace](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/cad4devopsinc1662079207461.devops-shield?src=website&mktcmpid=header).
 
-## License
+<h2 id="license">License</h2>
 
 **DevOps Shield Community Edition** is licensed under the [DevOps Shield proprietary license](https://www.devopsshield.com/termsofuse). Copyright (c) CAD4DevOps Inc. (DevOps Shield). All rights reserved.
 
 ---
 
-# Detailed Instructions using Docker Desktop GUI
+<h1 id="#detailed-instructions-using-docker-desktop-gui">Detailed Instructions using Docker Desktop GUI</h1>
 
-## Installation Prerequisites
+<h2 id="installation-prerequisites">Installation Prerequisites</h2>
 
 - Docker Desktop for [Windows](https://docs.docker.com/desktop/install/windows-install/), [Linux](https://docs.docker.com/desktop/install/linux-install/), or [Mac](https://docs.docker.com/desktop/install/mac-install/)
 
-## Install Steps
+<h2 id="install-steps">Install Steps</h2>
 
 1. Open Docker Desktop, click on Images, then Search Images to Run
 ![Docker Hub Click on Search Images to Run](https://github.com/devopsshield/devops-shield/raw/main/media/images/install/01-docker-hub-search-images-to-run.png)
@@ -107,7 +107,7 @@ Alternatively, you can try it for FREE in the [Azure Marketplace](https://azurem
 1. Now browse to the app at <http://localhost:8080> or simply click on the hyperlink below
 ![browse localhost on port 8080](https://github.com/devopsshield/devops-shield/raw/main/media/images/install/05-click-on-browse-port-8080-on-localhost.png)
 
-## First Login for DevOps Shield
+<h2 id="first-login-for-devops-shield">First Login for DevOps Shield</h2>
 
 1. Login to the app by clicking login button on top right
 ![click on login button](https://github.com/devopsshield/devops-shield/raw/main/media/images/install/06-click-on-login-button.png)
@@ -116,7 +116,7 @@ Alternatively, you can try it for FREE in the [Azure Marketplace](https://azurem
 1. Change default password
 ![change password](https://github.com/devopsshield/devops-shield/raw/main/media/images/install/08-change-password.png)
 
-## Configuration Prerequisites
+<h2 id="configuration-prerequisites">Configuration Prerequisites</h2>
 
 1. Obtain a Full Scoped Personal Access Token (PAT) for the Azure DevOps Organization to assess (see [Use personal access tokens](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate))
 ![get full pat token](https://github.com/devopsshield/devops-shield/raw/main/media/images/config/04-generate-full-pat-token-for-azure-devops-organization-to-assess.png)
@@ -125,7 +125,7 @@ Alternatively, you can try it for FREE in the [Azure Marketplace](https://azurem
 1. Obtain the Microsoft Entra ID (aka Azure Active Directory Tenant ID) associated to the Azure DevOps Organization you chose to assess (see [Connect your organization to Microsoft Entra ID](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/connect-organization-to-azure-ad))
 ![get microsoft entra id](https://github.com/devopsshield/devops-shield/raw/main/media/images/config/03-microsoft-entra-id-for-azure-devops-organization.png)
 
-## Config Steps
+<h2 id="config-steps">Config Steps</h2>
 
 1. In the app, click on setup configuration
 ![setup configuration](https://github.com/devopsshield/devops-shield/raw/main/media/images/config/01-click-on-setup-configuration.png)
@@ -140,7 +140,7 @@ Alternatively, you can try it for FREE in the [Azure Marketplace](https://azurem
 1. Depending on how large your Azure DevOps organization is, it may take minutes to finish. In our case, it took about 5 minutes to complete.
 ![wait for tasks to finish](https://github.com/devopsshield/devops-shield/raw/main/media/images/config/08-assessment-scan-completed.png)
 
-# Detailed Instructions using Azure (Web App for Containers)
+<h1 id="#detailed-instructions-using-azure-web-app-for-containers">Detailed Instructions using Azure (Web App for Containers)</h1>
 
 1. Login to the [Azure Portal](https://portal.azure.com) and click on Create a Resource
 ![Create a resource in azure portal](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/Login-to-Azure-click-create-a-resource.png)
@@ -193,7 +193,7 @@ Ensure you enter **devopsshield/devopsshield** for the Image and tag.
 
 ![follow post install steps](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/post-install-steps.png)
 
-# Detailed Instructions using AWS (Amazon Lightsail)
+<h1 id="detailed-instructions-using-aws-amazon-lightsail">Detailed Instructions using AWS (Amazon Lightsail)</h1>
 
 1. Sign in to the [Lightsail console](https://lightsail.aws.amazon.com/). On the Lightsail home page, choose the Containers tab and click on Create container service.
 ![click on containers in overview](https://github.com/devopsshield/devops-shield/raw/main/media/images/aws/install/Login-to-Amazon-Lightsail-and-click-on-containers.png)
@@ -225,7 +225,7 @@ The name of your container service must be unique within each AWS Region in your
 
 ![login-and-configure](https://github.com/devopsshield/devops-shield/raw/main/media/images/aws/install/login-to-configure-as-above.png)
 
-# Detailed Instructions using GCP (Cloud Run)
+<h1 id="detailed-instructions-using-gcp-cloud-run">Detailed Instructions using GCP (Cloud Run)</h1>
 
 1. Login to Google Cloud Platform [Cloud Run](https://console.cloud.google.com/run)
 
@@ -263,7 +263,7 @@ You can always check your resource usage in the metrics
 
 ![do the first login](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/do-the-first-login.png)
 
-# DevOps Assessments
+<h1 id="devops-assessments">DevOps Assessments</h1>
 
 Once an assessment has been done, you can view a full history of all assessments done by clicking on DevOps Assessments
 ![click on DevOps Assessments](https://github.com/devopsshield/devops-shield/raw/main/media/images/assessments/01-click-on-devops-assessments.png)
