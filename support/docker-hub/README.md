@@ -247,6 +247,10 @@ The name of your container service must be unique within each AWS Region in your
 
 ![increase memory limit if container crashes](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/increase-memory-limit-if-needed.png)
 
+You can always check your resource usage in the metrics
+
+![check resource usage](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/verify-resource-metrics-usage.png)
+
 5. Now click on create
 
 ![click on create](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/now-click-on-create.png)
