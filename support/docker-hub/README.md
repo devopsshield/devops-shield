@@ -14,6 +14,7 @@
   - [Config Steps](#config-steps)
 - [Detailed Instructions using Azure (Web App for Containers)](#detailed-instructions-using-azure-web-app-for-containers)
 - [Detailed Instructions using AWS (Amazon Lightsail)](#detailed-instructions-using-aws-amazon-lightsail)
+- [Detailed Instructions using GCP (Cloud Run)](#detailed-instructions-using-gcp-cloud-run)
 - [DevOps Assessments](#devops-assessments)
 
 # Quick Start
@@ -223,6 +224,36 @@ The name of your container service must be unique within each AWS Region in your
 7. Click on public domain link above and start your first DevOps assessment!
 
 ![login-and-configure](https://github.com/devopsshield/devops-shield/raw/main/media/images/aws/install/login-to-configure-as-above.png)
+
+# Detailed Instructions using GCP (Cloud Run)
+
+1. Login to Google Cloud Platform [Cloud Run](https://console.cloud.google.com/run)
+
+![create service in GCP cloud run](../../media/images/gcp/install/create-service-in-gcp-cloud-run.png)
+
+2. Click on Create Service and fill in the service details:
+
+- Container Image URL: **devopsshield/devopsshield**
+- Service Name: e.g. devopsshield-gcp-demo-1
+- Region
+
+![fill in service details](../../media/images/gcp/install/service-details-1.png)
+
+3. Add Authorization info, port information as well as (optionally) some health checks
+
+![add auth and port info](../../media/images/gcp/install/service-details-2.png)
+
+4. Now click on create
+
+![click on create](../../media/images/gcp/install/now-click-on-create.png)
+
+5. Wait for deployment to finish, then click on URL
+
+![wait for deployment then navigate to URL](../../media/images/gcp/install/wait-for-deployment-then-click-on-url.png)
+
+6. Browse the DevOps Shield Site then do your first login!
+
+![do the first login](../../media/images/gcp/install/do-the-first-login.png)
 
 # DevOps Assessments
 
