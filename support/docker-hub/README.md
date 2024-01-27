@@ -243,15 +243,19 @@ The name of your container service must be unique within each AWS Region in your
 
 ![add auth and port info](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/service-details-2.png)
 
-4. Now click on create
+4. You may need to **increase Memory Limit**!
+
+![increase memory limit if container crashes](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/increase-memory-limit-if-needed.png)
+
+5. Now click on create
 
 ![click on create](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/now-click-on-create.png)
 
-5. Wait for deployment to finish, then click on URL
+6. Wait for deployment to finish, then click on URL
 
 ![wait for deployment then navigate to URL](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/wait-for-deployment-then-click-on-url.png)
 
-6. Browse the DevOps Shield Site then do your first login!
+7. Browse the DevOps Shield Site then do your first login!
 
 ![do the first login](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/do-the-first-login.png)
 
