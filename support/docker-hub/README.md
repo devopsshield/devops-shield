@@ -229,7 +229,7 @@ The name of your container service must be unique within each AWS Region in your
 
 1. Login to Google Cloud Platform [Cloud Run](https://console.cloud.google.com/run)
 
-![create service in GCP cloud run](../../media/images/gcp/install/create-service-in-gcp-cloud-run.png)
+![create service in GCP cloud run](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/create-service-in-gcp-cloud-run.png)
 
 2. Click on Create Service and fill in the service details:
 
@@ -237,23 +237,23 @@ The name of your container service must be unique within each AWS Region in your
 - Service Name: e.g. devopsshield-gcp-demo-1
 - Region
 
-![fill in service details](../../media/images/gcp/install/service-details-1.png)
+![fill in service details](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/service-details-1.png)
 
 3. Add Authorization info, port information as well as (optionally) some health checks
 
-![add auth and port info](../../media/images/gcp/install/service-details-2.png)
+![add auth and port info](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/service-details-2.png)
 
 4. Now click on create
 
-![click on create](../../media/images/gcp/install/now-click-on-create.png)
+![click on create](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/now-click-on-create.png)
 
 5. Wait for deployment to finish, then click on URL
 
-![wait for deployment then navigate to URL](../../media/images/gcp/install/wait-for-deployment-then-click-on-url.png)
+![wait for deployment then navigate to URL](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/wait-for-deployment-then-click-on-url.png)
 
 6. Browse the DevOps Shield Site then do your first login!
 
-![do the first login](../../media/images/gcp/install/do-the-first-login.png)
+![do the first login](https://github.com/devopsshield/devops-shield/raw/main/media/images/gcp/install/do-the-first-login.png)
 
 # DevOps Assessments
 
