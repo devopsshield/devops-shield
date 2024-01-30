@@ -30,6 +30,8 @@
   - [Installation Guide](https://youtu.be/N00IR_WImN8)
 - Docker Hub:
   - [DevOps Shield Community Edition](https://hub.docker.com/r/devopsshield/devopsshield)
+- Live Demo:
+  - [demo.devopsshield.com](https://demo.devopsshield.com)
 
 <h2 id="who-we-are">Who we are</h2>
 
@@ -78,7 +80,7 @@ xdg-open http://localhost:8080
 
 Click [here](https://youtu.be/N00IR_WImN8) for video instructions.
 
-<h2 id="#devops-shield-in-the-azure-marketplace">DevOps Shield in the Azure Marketplace</h2>
+<h2 id="devops-shield-in-the-azure-marketplace">DevOps Shield in the Azure Marketplace</h2>
 
 Alternatively, you can try it for FREE in the [Azure Marketplace](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/cad4devopsinc1662079207461.devops-shield?src=website&mktcmpid=header).
 
@@ -88,7 +90,7 @@ Alternatively, you can try it for FREE in the [Azure Marketplace](https://azurem
 
 ---
 
-<h1 id="#detailed-instructions-using-docker-desktop-gui">Detailed Instructions using Docker Desktop GUI</h1>
+<h1 id="detailed-instructions-using-docker-desktop-gui">Detailed Instructions using Docker Desktop GUI</h1>
 
 <h2 id="installation-prerequisites">Installation Prerequisites</h2>
 
@@ -140,7 +142,7 @@ Alternatively, you can try it for FREE in the [Azure Marketplace](https://azurem
 1. Depending on how large your Azure DevOps organization is, it may take minutes to finish. In our case, it took about 5 minutes to complete.
 ![wait for tasks to finish](https://github.com/devopsshield/devops-shield/raw/main/media/images/config/08-assessment-scan-completed.png)
 
-<h1 id="#detailed-instructions-using-azure-web-app-for-containers">Detailed Instructions using Azure (Web App for Containers)</h1>
+<h1 id="detailed-instructions-using-azure-web-app-for-containers">Detailed Instructions using Azure (Web App for Containers)</h1>
 
 1. Login to the [Azure Portal](https://portal.azure.com) and click on Create a Resource
 ![Create a resource in azure portal](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/Login-to-Azure-click-create-a-resource.png)
