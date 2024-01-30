@@ -180,7 +180,7 @@ Ensure you enter **devopsshield/devopsshield** for the Image and tag.
 
 ![click on configuration](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/click-on-configuration.png)
 
-9. Add the setting then click OK
+9. Add the setting ```WEBSITES_PORT``` with value ```8080``` then click OK
 
 ![add the setting](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/add-websites-port-8080.png)
 
