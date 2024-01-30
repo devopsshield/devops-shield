@@ -13,6 +13,7 @@
   - [Configuration Prerequisites](#configuration-prerequisites)
   - [Config Steps](#config-steps)
 - [Detailed Instructions using Azure (Web App for Containers)](#detailed-instructions-using-azure-web-app-for-containers)
+  - [Azure Install Script](#azure-install-script) 
 - [Detailed Instructions using AWS (Amazon Lightsail)](#detailed-instructions-using-aws-amazon-lightsail)
 - [Detailed Instructions using GCP (Cloud Run)](#detailed-instructions-using-gcp-cloud-run)
 - [DevOps Assessments](#devops-assessments)
@@ -194,6 +195,13 @@ Ensure you enter **devopsshield/devopsshield** for the Image and tag.
 12. Follow the post install steps
 
 ![follow post install steps](https://github.com/devopsshield/devops-shield/raw/main/media/images/azure/install/post-install-steps.png)
+
+<h2 id="azure-install-script">Azure Install Script</h2>
+
+- Open a PowerShell terminal, then copy and run the following command:
+```
+Invoke-WebRequest "https://raw.githubusercontent.com/devopsshield/devops-shield/main/support/docker-hub/scripts/Azure/DevOpsShield-DockerHub-Azure-Install-Script.ps1" -OutFile "DevOpsShield-DockerHub-Azure-Install-Script.ps1"; Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass; .\DevOpsShield-DockerHub-Azure-Install-Script.ps1
+```
 
 <h1 id="detailed-instructions-using-aws-amazon-lightsail">Detailed Instructions using AWS (Amazon Lightsail)</h1>
 
