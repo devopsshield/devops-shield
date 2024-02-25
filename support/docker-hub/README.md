@@ -5,6 +5,7 @@
   - [How to use this image](#how-to-use-this-image)
   - [Video Walkthrough](#video-walkthrough)
   - [DevOps Shield in the Azure Marketplace](#devops-shield-in-the-azure-marketplace)
+  - [DevOps Shield in the Azure DevOps Marketplace](#devops-shield-in-the-azure-devops-marketplace)
   - [License](#license)
 - [Detailed Instructions using Docker Desktop GUI](#detailed-instructions-using-docker-desktop-gui)
   - [Installation Prerequisites](#installation-prerequisites)
@@ -33,6 +34,8 @@
   - [DevOps Shield Community Edition](https://hub.docker.com/r/devopsshield/devopsshield)
 - Live Demo:
   - [demo.devopsshield.com](https://demo.devopsshield.com)
+- DevOps Shield Security Scanner Pipeline Task:
+  - [Azure DevOps Marketplace](https://marketplace.visualstudio.com/items?itemName=DevOpsShield.DevOpsShield-SecurityScanner)
 
 <h2 id="who-we-are">Who we are</h2>
 
@@ -84,6 +87,10 @@ Click [here](https://youtu.be/N00IR_WImN8) for video instructions.
 <h2 id="devops-shield-in-the-azure-marketplace">DevOps Shield in the Azure Marketplace</h2>
 
 Alternatively, you can try it for FREE in the [Azure Marketplace](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/cad4devopsinc1662079207461.devops-shield?src=website&mktcmpid=header).
+
+<h2 id="devops-shield-in-the-azure-devops-marketplace">DevOps Shield in the Azure DevOps Marketplace</h2>
+
+You can also run the DevOps Shield CLI in a pipeline using the [DevOps Shield Security Scanner build task](https://marketplace.visualstudio.com/items?itemName=DevOpsShield.DevOpsShield-SecurityScanner).
 
 <h2 id="license">License</h2>
 
