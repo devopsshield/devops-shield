@@ -148,7 +148,10 @@ function Update-DevOpsShieldApp {
     [string]$common_network_name = "nginx-proxy",
     [string]$external = "false",
     [string]$environmentPrefix = "#",
-    [string]$portPrefix = ""
+    [string]$portPrefix = "",
+    [string]$VIRTUAL_HOST = "",
+    [string]$VIRTUAL_PORT = "",
+    [string]$LETSENCRYPT_HOST = ""
   )
   Write-Output "Updating DevOps Shield Application..."
   Log-Action "Updating DevOps Shield Application"
@@ -159,7 +162,7 @@ function Update-DevOpsShieldApp {
     Write-Output "Stopping containers..."
     sudo docker compose down   
 
-    $dockerComposeContent = @"
+    @"
 services:
   ${containerName}:
     image: $devopsShieldImage
@@ -196,11 +199,9 @@ networks:
   default:
     name: $common_network_name
     external: $external
-"@ 
+"@ | Out-File -FilePath "docker-compose.SQLite.yaml" -Encoding utf8
 
-    $dockerComposeContent | Out-File -FilePath "docker-compose.SQLite.yaml" -Encoding utf8
-
-    $dockerComposeContent = @"
+    @"
 services:
   ${containerName}:
     image: $devopsShieldImage
@@ -248,9 +249,7 @@ networks:
   default:
     name: $common_network_name
     external: $external
-"@ 
-
-    $dockerComposeContent | Out-File -FilePath "docker-compose.SqlServer.yaml" -Encoding utf8
+"@ | Out-File -FilePath "docker-compose.SqlServer.yaml" -Encoding utf8
 
     Write-Output "Copying the docker-compose file to $dockerComposeFileName ..."
     Copy-Item -Path "docker-compose.${DatabaseProvider}.yaml" -Destination $dockerComposeFileName -Force
@@ -289,38 +288,36 @@ function Update-DefectDojoApp {
     Write-Output "Stopping containers..."
     sudo docker compose down
 
-    $dockerComposeOverrideContent = @"
+    @"
 services:
-nginx:
-  restart: always
-  ${environmentPrefix}environment:
-  ${environmentPrefix}  VIRTUAL_HOST: $env:VIRTUAL_HOST
-  ${environmentPrefix}  VIRTUAL_PORT: $env:VIRTUAL_PORT
-  ${environmentPrefix}  LETSENCRYPT_HOST: $env:LETSENCRYPT_HOST
-  ${environmentPrefix}  NGINX_METRICS_ENABLED: `"$env:NGINX_METRICS_ENABLED`"
+  nginx:
+    restart: always
+    ${environmentPrefix}environment:
+    ${environmentPrefix}  VIRTUAL_HOST: $env:VIRTUAL_HOST
+    ${environmentPrefix}  VIRTUAL_PORT: $env:VIRTUAL_PORT
+    ${environmentPrefix}  LETSENCRYPT_HOST: $env:LETSENCRYPT_HOST
+    ${environmentPrefix}  NGINX_METRICS_ENABLED: $env:NGINX_METRICS_ENABLED
 
-uwsgi:
-  restart: always
+  uwsgi:
+    restart: always
 
-celerybeat:
-  restart: always
+  celerybeat:
+    restart: always
 
-celeryworker:
-  restart: always
+  celeryworker:
+    restart: always
 
-postgres:
-  restart: always
+  postgres:
+    restart: always
 
-redis:
-  restart: always
+  redis:
+    restart: always
 
 networks:
-default:
-  name: $common_network_name
-  external: $external
-"@
-
-    $dockerComposeOverrideContent | Out-File -FilePath "docker-compose.override.yml"
+  default:
+    name: $common_network_name
+    external: $external
+"@ | Out-File -FilePath "docker-compose.override.yml"
 
     Write-Output "Building containers..."
     sudo docker compose up -d
@@ -356,57 +353,50 @@ function Update-DependencyTrackApp {
     sudo docker compose down
     Write-Output "Dependency-Track will be available at http://${IP_ADDRESS}:8082"
 
-    $dockerComposeContent = @"
+    @"
 volumes:
-dependency-track:
+  dependency-track:
 
 services:
-dtrack-apiserver:
-  image: dependencytrack/apiserver
-  deploy:
-    resources:
-      limits:
-        memory: 12288m
-      reservations:
-        memory: 8192m
-    restart_policy:
-      condition: on-failure
-  ${environmentPrefix}environment:
-  ${environmentPrefix}  VIRTUAL_HOST: $env:VIRTUAL_HOST_BACKEND
-  ${environmentPrefix}  VIRTUAL_PORT: $env:VIRTUAL_PORT_BACKEND
-  ${environmentPrefix}  LETSENCRYPT_HOST: $env:LETSENCRYPT_HOST_BACKEND
-  ${portPrefix}ports:
-  ${portPrefix}  - '8081:8080'
-  volumes:
-    - 'dependency-track:/data'
-  restart: unless-stopped
+  dtrack-apiserver:
+    image: dependencytrack/apiserver
+    deploy:
+      resources:
+        limits:
+          memory: 12288m
+        reservations:
+          memory: 8192m
+      restart_policy:
+        condition: on-failure
+    ${environmentPrefix}environment:
+    ${environmentPrefix}  VIRTUAL_HOST: $env:VIRTUAL_HOST_BACKEND
+    ${environmentPrefix}  VIRTUAL_PORT: $env:VIRTUAL_PORT_BACKEND
+    ${environmentPrefix}  LETSENCRYPT_HOST: $env:LETSENCRYPT_HOST_BACKEND
+    ${portPrefix}ports:
+    ${portPrefix}  - "8081:8080"
+    volumes:
+      - "dependency-track:/data"
+    restart: unless-stopped
 
-dtrack-frontend:
-  image: dependencytrack/frontend
-  depends_on:
-    - dtrack-apiserver
-  environment:
-    # The base URL of the API server.
-    # NOTE:
-    #   * This URL must be reachable by the browsers of your users.
-    #   * The frontend container itself does NOT communicate with the API server directly, it just serves static files.
-    #   * When deploying to dedicated servers, please use the external IP or domain of the API server.
-    ${environmentPrefix}- VIRTUAL_HOST=$env:VIRTUAL_HOST_FRONTEND
-    ${environmentPrefix}- VIRTUAL_PORT=$env:VIRTUAL_PORT_FRONTEND
-    ${environmentPrefix}- LETSENCRYPT_HOST=$env:LETSENCRYPT_HOST_FRONTEND
-    ${environmentPrefix}- API_BASE_URL=https://$env:VIRTUAL_HOST_BACKEND
-    ${portPrefix}- API_BASE_URL=http://${IP_ADDRESS}:8081
-  ${portPrefix}ports:
-  ${portPrefix}  - "8082:8080"
-  restart: unless-stopped
+  dtrack-frontend:
+    image: dependencytrack/frontend
+    depends_on:
+      - dtrack-apiserver
+    environment:
+      ${environmentPrefix}VIRTUAL_HOST: $env:VIRTUAL_HOST_FRONTEND
+      ${environmentPrefix}VIRTUAL_PORT: $env:VIRTUAL_PORT_FRONTEND
+      ${environmentPrefix}LETSENCRYPT_HOST: $env:LETSENCRYPT_HOST_FRONTEND
+      ${environmentPrefix}API_BASE_URL: https://$env:VIRTUAL_HOST_BACKEND
+      ${portPrefix}API_BASE_URL: http://${IP_ADDRESS}:8081      
+    ${portPrefix}ports:
+    ${portPrefix}  - "8082:8080"
+    restart: unless-stopped
 
 networks:
-default:
-  name: $common_network_name
-  external: $external
-"@
-
-    $dockerComposeContent | Out-File -FilePath "docker-compose.yml"
+  default:
+    name: $common_network_name
+    external: $external
+"@ | Out-File -FilePath "docker-compose.yml"
 
     Write-Output "Building containers..."
     sudo docker compose up -d
@@ -444,56 +434,54 @@ function Update-SonarQube {
     Write-Output "Stopping containers..."
     sudo docker compose down
 
-    $dockerComposeContent = @"
+    @"
 services:
-sonarqube:
-  image: sonarqube:$SONARQUBE_VERSION
-  restart: always
-  depends_on:
-    - sonar_db
-  environment:
-    ${environmentPrefix}VIRTUAL_HOST: $env:VIRTUAL_HOST
-    ${environmentPrefix}VIRTUAL_PORT: $env:VIRTUAL_PORT
-    ${environmentPrefix}LETSENCRYPT_HOST: $env:LETSENCRYPT_HOST
-    SONAR_JDBC_URL: jdbc:postgresql://sonar_db:5432/sonar
-    SONAR_JDBC_USERNAME: sonar
-    SONAR_JDBC_PASSWORD: sonar
-  ${portPrefix}ports:
-  ${portPrefix}  - "9001:9000"
-  volumes:
-    - sonarqube_conf:/opt/sonarqube/conf
-    - sonarqube_data:/opt/sonarqube/data
-    - sonarqube_extensions:/opt/sonarqube/extensions
-    - sonarqube_logs:/opt/sonarqube/logs
-    - sonarqube_temp:/opt/sonarqube/temp
+  sonarqube:
+    image: sonarqube:$SONARQUBE_VERSION
+    restart: always
+    depends_on:
+      - sonar_db
+    environment:
+      ${environmentPrefix}VIRTUAL_HOST: $env:VIRTUAL_HOST
+      ${environmentPrefix}VIRTUAL_PORT: $env:VIRTUAL_PORT
+      ${environmentPrefix}LETSENCRYPT_HOST: $env:LETSENCRYPT_HOST
+      SONAR_JDBC_URL: jdbc:postgresql://sonar_db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+    ${portPrefix}ports:
+    ${portPrefix}  - "9001:9000"
+    volumes:
+      - sonarqube_conf:/opt/sonarqube/conf
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_temp:/opt/sonarqube/temp
 
-sonar_db:
-  image: postgres:$POSTGRES_VERSION
-  restart: always
-  environment:
-    POSTGRES_USER: sonar
-    POSTGRES_PASSWORD: sonar
-    POSTGRES_DB: sonar
-  volumes:
-    - sonar_db:/var/lib/postgresql
-    - sonar_db_data:/var/lib/postgresql/data
+  sonar_db:
+    image: postgres:$POSTGRES_VERSION
+    restart: always
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonar
+    volumes:
+      - sonar_db:/var/lib/postgresql
+      - sonar_db_data:/var/lib/postgresql/data
 
 volumes:
-sonarqube_conf:
-sonarqube_data:
-sonarqube_extensions:
-sonarqube_logs:
-sonarqube_temp:
-sonar_db:
-sonar_db_data:
+  sonarqube_conf:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonarqube_temp:
+  sonar_db:
+  sonar_db_data:
 
 networks:
-default:
-  name: $common_network_name
-  external: $external
-"@
-
-    $dockerComposeContent | Out-File -FilePath "docker-compose.yaml"
+  default:
+    name: $common_network_name
+    external: $external
+"@ | Out-File -FilePath "docker-compose.yaml"
 
     Write-Output "Building containers..."
     sudo docker compose up -d
