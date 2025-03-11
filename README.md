@@ -11,3 +11,7 @@ For Azure Marketplace support please follow the guide from [here](https://github
 ## Docker Hub Support
 
 For Docker Hub support please follow the guide from [here](https://github.com/devopsshield/devops-shield/tree/main/support/docker-hub).
+
+## One DevOps Shield Virtual Machine Support
+
+For support for your *One DevOps Shield Virtual Machine*, follow the guide from [here](https://github.com/devopsshield/devops-shield/tree/main/support/one-dos-vm).
