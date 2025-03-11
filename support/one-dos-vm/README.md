@@ -6,7 +6,7 @@
 
 - You have already installed the One DevOps Shield Virtual Machine from the Azure Marketplace or on your Virtualization Host (Hyper-V or VMware)
 - Sample Installation:
-PUT IMAGE HERE
+![image](https://github.com/user-attachments/assets/8124f060-fd6d-408e-8522-5acbd1bba091)
 
 ## Usage
 
