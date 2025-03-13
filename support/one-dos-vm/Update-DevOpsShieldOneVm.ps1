@@ -13,34 +13,109 @@ Set-StrictMode -Version Latest
 # The script will create the log file if it does not exist
 # The script will append to the log file if it already exists
 
-if ($env:OS -eq "Windows_NT") {
-  # Windows OS
-  Write-Output "Running on Windows OS"
-  Write-Output "Setting log file path to C:\DevOpsShieldOneVM_UpdateLog.txt"
-  $logFile = "C:\DevOpsShieldOneVM_UpdateLog.txt"
-}
-else {
-  # Linux OS
-  Write-Output "Running on Linux OS"
-  Write-Output "Setting log file path to /var/log/DevOpsShieldOneVM_UpdateLog.txt"
-  $logFile = "/var/log/DevOpsShieldOneVM_UpdateLog.txt"
-  $rootFolder = "/home/ubuntu"
-}
-
 # ensure script is run with sudo privileges
 if ($PSVersionTable.Platform -eq "Unix") {
+  # check if it's an azure vm if and only if the folder /var/lib/waagent exists
+  # if azure vm, set the variable $isAzureVM to true
+  if (Test-Path -Path "/var/lib/waagent") {
+    Write-Output "This is an Azure VM."
+    # set the variable $isAzureVM to true
+    $isAzureVM = $true
+  }
+  else {
+    Write-Output "This is not an Azure VM."
+    # set the variable $isAzureVM to false
+    $isAzureVM = $false
+  }
+
   if ($(whoami) -ne "root") {
-    Write-Output "Script is not running with sudo privileges."
-    Write-Output "Please run the script with sudo."
-    Write-Output "run with: sudo pwsh Update-DevOpsShieldOneVm.ps1"
-    Write-Output "Exiting script."
-    exit 1
+    # echo setting the variable $isRootUser to false
+    Write-Output "Running as non-root user ${env:USER}"
+    $isRootUser = $false
+
+    # if this is an azure vm, this is acceptable
+    if ($isAzureVM) {
+      Write-Output "Running as non-root user ${env:USER} on Azure VM"
+      # set rootFolder
+      $rootFolder = "${HOME}"
+      Write-Output "Setting root folder to $rootFolder"
+      # set the log file path
+      $logFile = "${rootFolder}/DevOpsShieldOneVM_UpdateLog.txt"
+      Write-Output "Setting log file path to ${logFile}"      
+    }
+    else {
+      Write-Output "Running as non-root user ${env:USER} on non-Azure VM"
+      Write-Output "This script must be run as root user. Please run the script with sudo."        
+      Write-Output "Please run with: sudo pwsh Update-DevOpsShieldOneVm.ps1"
+      Write-Output "Exiting script."
+      exit
+    }
+  }
+  else {
+    Write-Output "Running as root user"
+    $isRootUser = $true
+
+    # if this is an azure vm, this is NOT acceptable
+    if ($isAzureVM) {
+      Write-Output "Running as root user ${env:USER} on Azure VM"
+      # not allowed exiting script
+      Write-Output "This script must not be run as root user on Azure VM. Please run the script with a non-root user."
+      Write-Output "Please run with: pwsh Update-DevOpsShieldOneVm.ps1"
+      Write-Output "Exiting script."
+      exit
+    }
+    else {
+      Write-Output "Running as root user ${env:USER} on non-Azure VM"
+      # set rootFolder
+      # find the home directory of the first non-root user
+      $homeDir = Get-ChildItem -Path /home | Where-Object { $_.Name -ne "root" } | Select-Object -First 1
+      if ($homeDir) {
+        $rootFolder = "/home/$($homeDir.Name)"
+      }
+      else {
+        # if no non-root user found, set rootFolder to $HOME
+        Write-Output "No non-root user found. Setting root folder to $HOME"
+        $rootFolder = "${HOME}"
+      }
+      Write-Output "Setting root folder to $rootFolder"
+      # set the log file path
+      $logFile = "${rootFolder}/DevOpsShieldOneVM_UpdateLog.txt"
+      Write-Output "Setting log file path to ${logFile}"      
+    }
   }
 }
 
+# echo out vars so far
+$common_network_name = "nginx-proxy"
+
+Write-Output "========================================"
+Write-Output "Common network name: $common_network_name"
+Write-Output "rootFolder: $rootFolder"
+Write-Output "isAzureVM: $isAzureVM"
+Write-Output "isRootUser: $isRootUser"
+Write-Output "logFile: $logFile"
+# echo out the current user
+Write-Output "Current user: ${env:USER}"
+# echo out the current hostname
+Write-Output "Current hostname: $(hostname)"
+# echo out the current pretty hostname
+Write-Output "Current pretty hostname: $(hostnamectl --pretty)"
+# echo out the current IP address
+Write-Output "Current IP address: $(hostname -I | cut -d ' ' -f1)"
+# echo out the current external IP address
+# get the external IP address using ifconfig.me
+$externalIP = (Invoke-WebRequest -uri "http://ifconfig.me/ip").Content.Trim()
+Write-Output "Current external IP address: $externalIP"
+# give HOME directory
+Write-Output "HOME directory: $HOME"
+# echo out the current date and time
+Write-Output "Current date and time: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")"
+# echo out the current date and time in UTC
+Write-Output "Current date and time in UTC: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss" -AsUTC)"
+Write-Output "========================================"
+
 # Requires PowerShell Module Resolve-DnsNameCrossPlatform
 # Check if the module is installed
-
 Write-Output "Checking if Resolve-DnsNameCrossPlatform module is installed..."
 $moduleName = "Resolve-DnsNameCrossPlatform"
 $moduleFound = Get-InstalledModule -Name $moduleName
@@ -164,8 +239,10 @@ function Update-DevOpsShieldApp {
     [string]$READ_ONLY_MODE = "False",
     [string]$dockerComposeFileName = "docker-compose.yaml",
     [string]$DatabaseProvider = "SQLite",
-    [string]$rootFolder = "/home/ubuntu",
-    [string]$common_network_name = "nginx-proxy",
+    [Parameter(Mandatory = $true)]
+    [string]$rootFolder,
+    [Parameter(Mandatory = $true)]
+    [string]$common_network_name,
     [string]$external = "false",
     [string]$environmentPrefix = "#",
     [string]$networkPrefix = "#",
@@ -174,9 +251,15 @@ function Update-DevOpsShieldApp {
     [string]$VIRTUAL_PORT = "8080",
     [string]$LETSENCRYPT_HOST = ""
   )
+
   Write-Output "Updating DevOps Shield Application..."
   Write-ActionLog "Updating DevOps Shield Application"
   try {
+    # create folder if it does not exist
+    if (-not (Test-Path -Path "${rootFolder}/devops-shield")) {
+      Write-Output "Creating folder ${rootFolder}/devops-shield..."
+      New-Item -ItemType Directory -Path "${rootFolder}/devops-shield"
+    }
     Set-Location  "${rootFolder}/devops-shield"
     Write-Output "Pulling latest images..."
     sudo docker pull $devopsShieldImage
@@ -295,8 +378,10 @@ ${networkPrefix}    external: $external
 
 function Update-DefectDojoApp {
   param (
-    [string]$rootFolder = "/home/ubuntu",
-    [string]$common_network_name = "nginx-proxy",
+    [Parameter(Mandatory = $true)]
+    [string]$rootFolder,
+    [Parameter(Mandatory = $true)]
+    [string]$common_network_name,
     [string]$external = "false",
     [string]$environmentPrefix = "#",
     [string]$networkPrefix = "#",
@@ -310,6 +395,14 @@ function Update-DefectDojoApp {
   Write-Output "Updating Defect Dojo Application..."
   Write-ActionLog "Updating Defect Dojo Application"
   try {
+    # create folder if it does not exist
+    if (-not (Test-Path -Path "${rootFolder}/django-DefectDojo")) {
+      Write-Output "Creating folder ${rootFolder}/django-DefectDojo..."
+      # by git clone
+      Write-Output "Cloning Defect Dojo repository..."
+      Write-ActionLog "Cloning Defect Dojo repository"
+      git clone https://github.com/DefectDojo/django-DefectDojo "${rootFolder}/django-DefectDojo"
+    }
     Set-Location "${rootFolder}/django-DefectDojo"
     Write-Output "Pulling latest from git repo ..."
     sudo git pull
@@ -371,8 +464,10 @@ ${networkPrefix}    external: $external
 
 function Update-DependencyTrackApp {
   param (
-    [string]$rootFolder = "/home/ubuntu",
-    [string]$common_network_name = "nginx-proxy",
+    [Parameter(Mandatory = $true)]
+    [string]$rootFolder,
+    [Parameter(Mandatory = $true)]
+    [string]$common_network_name,
     [string]$external = "false",
     [string]$environmentPrefix = "#",
     [string]$networkPrefix = "#",
@@ -389,6 +484,11 @@ function Update-DependencyTrackApp {
   Write-Output "Updating Dependency Track Application..."
   Write-ActionLog "Updating Dependency Track Application"
   try {
+    # create folder if it does not exist
+    if (-not (Test-Path -Path "${rootFolder}/dependency-track")) {
+      Write-Output "Creating folder ${rootFolder}/dependency-track..."
+      New-Item -ItemType Directory -Path "${rootFolder}/dependency-track"
+    }
     Set-Location "${rootFolder}/dependency-track"
     Write-Output "Pulling latest images..."
     sudo docker pull dependencytrack/frontend
@@ -466,8 +566,10 @@ ${networkPrefix}    external: $external
 
 function Update-SonarQubeCommunity {
   param (
-    [string]$rootFolder = "/home/ubuntu",
-    [string]$common_network_name = "nginx-proxy",
+    [Parameter(Mandatory = $true)]
+    [string]$rootFolder,
+    [Parameter(Mandatory = $true)]
+    [string]$common_network_name,
     [string]$external = "false",
     [string]$environmentPrefix = "#",
     [string]$networkPrefix = "#",
@@ -482,6 +584,11 @@ function Update-SonarQubeCommunity {
   Write-Output "Updating SonarQube..."
   Write-ActionLog "Updating SonarQube"
   try {
+    # create folder if it does not exist
+    if (-not (Test-Path -Path "${rootFolder}/sonarqube")) {
+      Write-Output "Creating folder ${rootFolder}/sonarqube..."
+      New-Item -ItemType Directory -Path "${rootFolder}/sonarqube"
+    }
     Set-Location "${rootFolder}/sonarqube"
     Write-Output "Pulling latest images..."
     sudo docker pull sonarqube:${SONARQUBE_VERSION}
@@ -558,8 +665,10 @@ ${networkPrefix}    external: $external
 
 function Install-NginxProxy {
   param (
-    [string]$rootFolder = "/home/ubuntu",
-    [string]$common_network_name = "nginx-proxy",
+    [Parameter(Mandatory = $true)]
+    [string]$rootFolder,
+    [Parameter(Mandatory = $true)]
+    [string]$common_network_name,
     [string]$DEFAULT_EMAIL = ""
   )
 
@@ -578,6 +687,11 @@ function Install-NginxProxy {
     Write-Output "Creating external network $common_network_name..."
     sudo docker network create $common_network_name
 
+    # create folder if it does not exist
+    if (-not (Test-Path -Path "${rootFolder}/proxy")) {
+      Write-Output "Creating folder ${rootFolder}/proxy..."
+      New-Item -ItemType Directory -Path "${rootFolder}/proxy"
+    }
     Set-Location -Path $rootFolder
     Write-Output "Creating Nginx Proxy directory..."
     Write-ActionLog "Creating Nginx Proxy directory"
@@ -604,9 +718,13 @@ client_max_body_size 800m;
     # create folder /etc/nginx if it does not exist
     if (-not (Test-Path -Path "/etc/nginx")) {
       Write-Output "Creating /etc/nginx directory..."
-      New-Item -ItemType Directory -Path "/etc/nginx"
+      #New-Item -ItemType Directory -Path "/etc/nginx"
+      # create the directory with sudo
+      sudo mkdir -p /etc/nginx
     }
-    Copy-Item -Path "proxy.conf" -Destination "/etc/nginx/proxy.conf" -Force
+    #Copy-Item -Path "proxy.conf" -Destination "/etc/nginx/proxy.conf" -Force
+    # create the directory with sudo
+    sudo cp -f proxy.conf /etc/nginx/proxy.conf
 
     $dockerComposeContent = @"
 services:
@@ -673,7 +791,8 @@ volumes:
 
 function Set-DevOpsShieldOneVm {
   param (
-    [string]$rootFolder = "/home/ubuntu"
+    [Parameter(Mandatory = $true)]
+    [string]$rootFolder
   )
 
   Write-Output "Configuring DevOps Shield One VM..."
@@ -690,8 +809,8 @@ function Set-DevOpsShieldOneVm {
       DependencyTrackBackendDNSName  = Read-Host "Enter the DNS name for Dependency Track Backend"
       DependencyTrackFrontendDNSName = Read-Host "Enter the DNS name for Dependency Track Frontend"
       SonarQubeDNSName               = Read-Host "Enter the DNS name for SonarQube"
-      DevOpsShieldDNSName            = Read-Host "Enter the DNS name for DevOps Shield"
-      DNSNameServer                  = Read-Host "Enter the DNS server for the above DNS names"
+      DevOpsShieldDNSName            = Read-Host "Enter the DNS name for DevOps Shield"      
+      DNSNameServer                  = Read-Host "Enter the DNS name server (default: <NONE>)" -Default "<NONE>"
       Tested                         = $false
       TestedTimestamp                = ""
       TestResult                     = ""
@@ -717,38 +836,48 @@ function Set-DevOpsShieldOneVm {
 
 function Get-IpAddress {
   param (
+    [Parameter(Mandatory = $true)]
     [string]$dnsName,
-    [string]$dnsServer
+
+    [Parameter(Mandatory = $false)]
+    [string]$dnsServer = "<NONE>",
+
+    [Parameter(Mandatory = $false)]
+    [int]$maximumNumberOfIterations = 10
   )
+
   try {
-    # Use nslookup to get the IP address    
+    # Initialize variables
     $resolvedIPs = @()
     $currentName = $dnsName
+    $currentIteration = 0
 
+    # Loop until an IP address is found or the maximum number of iterations is reached
     do {
-      Write-ActionLog "Resolving DNS name: $currentName"
       Write-Output "Resolving DNS name: $currentName"
+      Write-ActionLog "Resolving DNS name: $currentName"
 
-      $dnsLookupResult = Resolve-DnsNameCrossPlatform -Name $currentName -Server $dnsServer 
+      # Perform DNS lookup using Resolve-DnsNameCrossPlatform
+      if ($dnsServer -eq "<NONE>" -or [string]::IsNullOrEmpty($dnsServer)) {
+        Write-Output "Using default DNS server."
+        $dnsLookupResult = Resolve-DnsNameCrossPlatform -Name $currentName
+      }
+      else {
+        Write-Output "Using DNS server: $dnsServer"
+        $dnsLookupResult = Resolve-DnsNameCrossPlatform -Name $currentName -Server $dnsServer
+      }
 
-      # echo result
-      Write-Output "DNS Lookup Result: $dnsLookupResult"
-
-      # keep searching till we find an IP address
+      # Process DNS lookup results
       foreach ($result in $dnsLookupResult) {
         if ($result.IPAddress -and $result.IPAddress -notin $resolvedIPs) {
           $resolvedIPs += $result.IPAddress
           Write-Output "Resolved IP address: $($result.IPAddress)"
 
-          # if format is an IP address, set it as the current name and return
+          # Check if the result is an IP address
           if ($result.IPAddress -match '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$') {
             Write-Output "Found IP address: $($result.IPAddress)"
-            $ipAddress = $result.IPAddress
-            Write-Output "IP address: $ipAddress"
-            # return the IP address
-            return $ipAddress
+            return $result.IPAddress
           }
-          # if format is a DNS name, set it as the current name and continue
           else {
             $currentName = $result.IPAddress
             Write-Output "Found DNS name: $($result.IPAddress)"
@@ -756,16 +885,25 @@ function Get-IpAddress {
           }
         }
       }
-            
+
+      # Increment iteration count
+      $currentIteration++
+      Write-Output "Current iteration: $currentIteration"
+
+      # Check if maximum number of iterations is reached
+      if ($currentIteration -ge $maximumNumberOfIterations) {
+        Write-Output "Reached maximum number of iterations: $maximumNumberOfIterations"
+        break
+      }
     } while ($currentName)
 
-    # if we reach here, we have not found an IP address
+    # If no IP address is found
     Write-Output "No IP address found for DNS name: $dnsName"
     Write-Output "Resolved IP addresses: $resolvedIPs"
     return $null
   }
   catch {
-    Write-Output "Error getting IP address for ${dnsName}: $_"
+    Write-Error "Error getting IP address for ${dnsName}: $_"
     Write-ActionLog "Error getting IP address for ${dnsName}: $_"
     return $null
   }
@@ -773,7 +911,8 @@ function Get-IpAddress {
 
 function Test-VMConfiguration {
   param (
-    [string]$rootFolder = "/home/ubuntu"
+    [Parameter(Mandatory = $true)]
+    [string]$rootFolder
   )
 
   Write-Output "Testing VM Configuration..."
@@ -818,7 +957,14 @@ function Test-VMConfiguration {
       Write-Output "Testing DNS names..."
       Write-Output "DNS server: $dnsServer"
       foreach ($dnsName in $dnsNames) {
-        $ipAddress = Get-IpAddress -dnsName $dnsName -dnsServer $dnsServer
+        # Check if DNS name is empty or == <NONE>
+        if ($dnsName -eq "" -or $dnsName -eq "<NONE>") {
+          Write-Output "DNS name is empty or <NONE>."
+          $ipAddress = Get-IpAddress -dnsName $dnsName
+        }
+        else {
+          $ipAddress = Get-IpAddress -dnsName $dnsName -dnsServer $dnsServer
+        }
         if ($null -eq $ipAddress) {
           Write-Error "DNS name $dnsName does not resolve to an IP address."
           throw "DNS name $dnsName does not resolve to an IP address."
@@ -862,8 +1008,10 @@ function Test-VMConfiguration {
 
 function Update-AllAppsToNginxProxy {
   param (
-    [string]$rootFolder = "/home/ubuntu",
-    [string]$common_network_name = "nginx-proxy",
+    [Parameter(Mandatory = $true)]
+    [string]$rootFolder,
+    [Parameter(Mandatory = $true)]
+    [string]$common_network_name,
     [string]$external = "true"
   )
 
@@ -1059,8 +1207,8 @@ while ($true) {
       Write-Output "Running docker without sudo..."
       Write-ActionLog "Running docker without sudo"
       # Add the current user to the docker group
-      sudo usermod -aG docker $USER
-      Write-Output "You need to log out and log back in for the changes to take effect."
+      sudo usermod -aG docker ${env:USER}
+      Write-Warning "You need to log out and log back in for the changes to take effect."
     }
     1 {
       if (Read-Host "Are you sure you want to change the hostname? (y/n)" -eq 'y') {
@@ -1074,42 +1222,48 @@ while ($true) {
     }
     3 {
       if (Read-Host "Are you sure you want to update the DevOps Shield Application? (y/n)" -eq 'y') {
-        Update-DevOpsShieldApp
+        Update-DevOpsShieldApp -rootFolder $rootFolder `
+          -common_network_name $common_network_name
       }
     }
     4 {
       if (Read-Host "Are you sure you want to update the Defect Dojo Application? (y/n)" -eq 'y') {
-        Update-DefectDojoApp
+        Update-DefectDojoApp -rootFolder $rootFolder `
+          -common_network_name $common_network_name 
       }
     }
     5 {
       if (Read-Host "Are you sure you want to update the Dependency Track Application? (y/n)" -eq 'y') {
-        Update-DependencyTrackApp
+        Update-DependencyTrackApp -rootFolder $rootFolder `
+          -common_network_name $common_network_name
       }
     }
     6 {
       if (Read-Host "Are you sure you want to update SonarQube? (y/n)" -eq 'y') {
-        Update-SonarQubeCommunity
+        Update-SonarQubeCommunity -rootFolder $rootFolder `
+          -common_network_name $common_network_name
       }
     }
     7 {
       if (Read-Host "Are you sure you want to install Nginx Proxy? (y/n)" -eq 'y') {
-        Install-NginxProxy
+        Install-NginxProxy -rootFolder $rootFolder `
+          -common_network_name $common_network_name
       }
     }
     8 {
       if (Read-Host "Are you sure you want to configure the DevOps Shield One VM? (y/n)" -eq 'y') {
-        Set-DevOpsShieldOneVm
+        Set-DevOpsShieldOneVm -rootFolder $rootFolder
       }
     }
     9 {
       if (Read-Host "Are you sure you want to test the VM configuration? (y/n)" -eq 'y') {
-        Test-VMConfiguration
+        Test-VMConfiguration -rootFolder $rootFolder
       }
     }
     10 {
       if (Read-Host "Are you sure you want to update all applications to Nginx Proxy? (y/n)" -eq 'y') {
-        Update-AllAppsToNginxProxy
+        Update-AllAppsToNginxProxy -rootFolder $rootFolder `
+          -common_network_name $common_network_name
       }
     }
     11 {
