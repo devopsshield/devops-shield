@@ -12,7 +12,7 @@
 
 - Open a PowerShell terminal, then copy and run the following command:
 ```
-Invoke-WebRequest "https://raw.githubusercontent.com/devopsshield/devops-shield/main/support/one-dos-vm/Update-DevOpsShieldOneVm.ps1" -OutFile "Update-DevOpsShieldOneVm.ps1"; Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass; .\Update-DevOpsShieldOneVm.ps1
+Invoke-WebRequest "https://raw.githubusercontent.com/devopsshield/devops-shield/main/support/one-dos-vm/Update-DevOpsShieldOneVm.ps1" -OutFile "Update-DevOpsShieldOneVm.ps1"; .\Update-DevOpsShieldOneVm.ps1
 ```
 
 ## Contact Us
