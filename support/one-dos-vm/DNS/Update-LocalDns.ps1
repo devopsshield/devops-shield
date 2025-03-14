@@ -2,15 +2,21 @@ param (
     [Parameter(Mandatory = $false)]
     [string]$ZoneName = "devopsabcs.com",
 
+    [string]$customerSuffix = "cx-003",
+
     [Parameter(Mandatory = $false)]
-    [string[]]$CnameRecordNames = @("defectdojo-dev-003", "sonarqube-dev-003", "devopsshield-dev-003", "dependencytrack-fe-dev-003", "dependencytrack-api-dev-003"),
+    [string[]]$CnameRecordNames = @("defectdojo-$customerSuffix", "sonarqube-$customerSuffix", "devopsshield-$customerSuffix", "dependencytrack-fe-$customerSuffix", "dependencytrack-api-$customerSuffix"),
 
     [Parameter(Mandatory = $false)]
     [string]$DnsServer = "dc2devops.devopsabcs.com",
 
     [Parameter(Mandatory = $false)]
-    [string]$CnameRecordTarget = "onedosdev003.canadacentral.cloudapp.azure.com"
+    [string]$CnameRecordTarget = "onedosdev003.canadacentral.cloudapp.azure.com" #onedosvmcx003.devopsabcs.com
 )
+
+# # sample usage
+# .\Update-LocalDns.ps1 -customerSuffix "cx-003" `
+#     -CnameRecordTarget "onedosvmcx003.devopsabcs.com"
 
 # Verify if DnsServer PowerShell module is installed
 function Test-DnsServerModule {
@@ -40,22 +46,28 @@ function Update-CnameRecords {
         try {
             # Remove the existing CNAME record
             Write-Host "Removing existing CNAME record for $cnameRecord..." -ForegroundColor Green
+            Write-Host "COMMAND: Remove-DnsServerResourceRecord -Name $cnameRecord -ZoneName $ZoneName -ComputerName $DnsServer -RRType CNAME -Force" -ForegroundColor Green
             Remove-DnsServerResourceRecord -Name $cnameRecord `
                 -ZoneName $ZoneName `
                 -ComputerName $DnsServer `
-                -RRType CNAME -Force
-
+                -RRType CNAME -Force                      
+        }
+        catch {
+            Write-Error "Failed to update CNAME record for ${cnameRecord}: $_"
+        }
+        try {
             # Add the new CNAME record
             Write-Host "Adding new CNAME record for $cnameRecord..." -ForegroundColor Green
+            Write-Host "COMMAND: Add-DnsServerResourceRecordCName -Name $cnameRecord -ZoneName $ZoneName -ComputerName $DnsServer -Target $CnameRecordTarget" -ForegroundColor Green
             Add-DnsServerResourceRecordCName -Name $cnameRecord `
                 -ZoneName $ZoneName `
                 -ComputerName $DnsServer `
-                -HostNameAlias $CnameRecordTarget   
+                -HostNameAlias $CnameRecordTarget
 
             Write-Host "CNAME record for $cnameRecord updated successfully." -ForegroundColor Green
         }
         catch {
-            Write-Error "Failed to update CNAME record for ${cnameRecord}: $_"
+            Write-Error "Failed to add CNAME record for ${cnameRecord}: $_"
         }
     }
 }
