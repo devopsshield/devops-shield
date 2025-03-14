@@ -87,9 +87,13 @@ if ($PSVersionTable.Platform -eq "Unix") {
 
 # echo out vars so far
 $common_network_name = "nginx-proxy"
+$POSTGRES_VERSION = "16" # for SonarQube
+$SONARQUBE_VERSION = "community" # latest community version
 
 Write-Output "========================================"
 Write-Output "Common network name: $common_network_name"
+Write-Output "POSTGRES_VERSION: $POSTGRES_VERSION"
+Write-Output "SONARQUBE_VERSION: $SONARQUBE_VERSION"
 Write-Output "rootFolder: $rootFolder"
 Write-Output "isAzureVM: $isAzureVM"
 Write-Output "isRootUser: $isRootUser"
@@ -574,8 +578,8 @@ function Update-SonarQubeCommunity {
     [string]$environmentPrefix = "#",
     [string]$networkPrefix = "#",
     [string]$portPrefix = "",
-    [string]$SONARQUBE_VERSION = "community", # latest community version
-    [string]$POSTGRES_VERSION = "13",
+    [string]$SONARQUBE_VERSION = "$SONARQUBE_VERSION", # latest community version
+    [string]$POSTGRES_VERSION = "$POSTGRES_VERSION", # for SonarQube
     [string]$VIRTUAL_HOST = "",
     [string]$VIRTUAL_PORT = "9000",
     [string]$LETSENCRYPT_HOST = ""
@@ -628,7 +632,7 @@ services:
       POSTGRES_DB: sonar
     volumes:
       - sonar_db:/var/lib/postgresql
-      - sonar_db_data:/var/lib/postgresql/data
+      - sonar_db_data_${POSTGRES_VERSION}:/var/lib/postgresql/data
 
 volumes:
   sonarqube_conf:
@@ -637,7 +641,7 @@ volumes:
   sonarqube_logs:
   sonarqube_temp:
   sonar_db:
-  sonar_db_data:
+  sonar_db_data_${POSTGRES_VERSION}:
 
 ${networkPrefix}networks:
 ${networkPrefix}  default:
@@ -1151,8 +1155,8 @@ function Update-AllAppsToNginxProxy {
     Write-Output "VIRTUAL_HOST: $($configData.SonarQubeDNSName)"
     Write-Output "VIRTUAL_PORT: 9000"
     Write-Output "LETSENCRYPT_HOST: $($configData.SonarQubeDNSName)"
-    Write-Output "SONARQUBE_VERSION: community"
-    Write-Output "POSTGRES_VERSION: 13"
+    Write-Output "SONARQUBE_VERSION: $SONARQUBE_VERSION"
+    Write-Output "POSTGRES_VERSION: $POSTGRES_VERSION"
 
     Update-SonarQubeCommunity -rootFolder $rootFolder `
       -common_network_name $common_network_name `
@@ -1160,8 +1164,8 @@ function Update-AllAppsToNginxProxy {
       -environmentPrefix "" `
       -networkPrefix "" `
       -portPrefix "#" `
-      -SONARQUBE_VERSION "community" `
-      -POSTGRES_VERSION "13" `
+      -SONARQUBE_VERSION "$SONARQUBE_VERSION" `
+      -POSTGRES_VERSION "$POSTGRES_VERSION" `
       -VIRTUAL_HOST $configData.SonarQubeDNSName `
       -VIRTUAL_PORT "9000" `
       -LETSENCRYPT_HOST $configData.SonarQubeDNSName
@@ -1241,7 +1245,9 @@ while ($true) {
     6 {
       if (Read-Host "Are you sure you want to update SonarQube? (y/n)" -eq 'y') {
         Update-SonarQubeCommunity -rootFolder $rootFolder `
-          -common_network_name $common_network_name
+          -common_network_name $common_network_name `
+          -SONARQUBE_VERSION "$SONARQUBE_VERSION" `
+          -POSTGRES_VERSION "$POSTGRES_VERSION"
       }
     }
     7 {
