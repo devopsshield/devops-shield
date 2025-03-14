@@ -1,10 +1,15 @@
 param (
     [string]$ZoneName = "devopsabcs.com",
-    [string[]]$RecordSetNames = @("defectdojo-dev-003", "sonarqube-dev-003", "devopsshield-dev-003", "dependencytrack-fe-dev-003", "dependencytrack-api-dev-003"),
+    [string]$customerSuffix = "cx-003",
+    [string[]]$RecordSetNames = @("defectdojo-$customerSuffix", "sonarqube-$customerSuffix", "devopsshield-$customerSuffix", "dependencytrack-fe-$customerSuffix", "dependencytrack-api-$customerSuffix"),
     [string]$ResourceGroupName = "devopsabcs-dns-rg",
-    [string]$CName = "onedosdev003.canadacentral.cloudapp.azure.com",
+    [string]$CName = "onedosdev003.canadacentral.cloudapp.azure.com", #bigwin2025.devopsabcs.com
     [string]$SubscriptionNameOrId = "Production"
 )
+
+# # sample usage
+# .\Update-AzureDns.ps1 -customerSuffix "cx-003" `
+#     -CName bigwin2025.devopsabcs.com
 
 # Function to check if Azure CLI is installed
 function Test-AzureCLI {
