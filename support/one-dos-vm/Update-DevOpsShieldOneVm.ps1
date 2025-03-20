@@ -1460,7 +1460,7 @@ function Get-IpAddress {
       #Write-Output "Number of results: $($dnsLookupResult.Count)"
       foreach ($result in $dnsLookupResult) {
         # if OS is Linux
-        if ($env:OS -eq "Linux") {
+        if ($IsLinux) {
           # Check if the result is an IP address
           Write-Output $result
           if ($result.IPAddress -and $result.IPAddress -notin $resolvedIPs) {
