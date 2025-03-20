@@ -15,7 +15,7 @@ Set-StrictMode -Version Latest
 
 function Get-MachineIpAddress {
 
-  if ($env:OS -eq "Windows_NT") {
+  if ($IsWindows) {
     $IP_ADDRESS = (Get-NetIPAddress | Where-Object { $_.AddressState -eq 'Preferred' -and $_.ValidLifetime -lt '24:00:00' }).IPAddress
     
     if ($IP_ADDRESS.GetType().Name -eq 'Object[]') {
@@ -42,7 +42,7 @@ function  Remove-DockerNetwork {
     [string]$networkName
   )
   # if OS is Linux, use sudo to check the network
-  if ($env:OS -eq "Windows_NT") {
+  if ($IsWindows) {
     Write-Output "Checking if network $networkName exists..."
     $networkExists = docker network ls --format '{{.Name}}' | Select-String -Pattern "^${networkName}$"
   }
@@ -54,7 +54,7 @@ function  Remove-DockerNetwork {
     Write-ActionLog "Network $networkName already exists."
     # can delete default network
     # if OS is Linux, use sudo to delete the network
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Deleting $networkName ..."
       docker network rm "$networkName"
     }
@@ -71,7 +71,7 @@ function  Remove-DockerNetwork {
 }
 
 # ensure script is run with sudo privileges
-if ($PSVersionTable.Platform -eq "Unix") {
+if ($IsLinux) {
   # check if it's an azure vm if and only if the folder /var/lib/waagent exists
   # if azure vm, set the variable $isAzureVM to true
   if (Test-Path -Path "/var/lib/waagent") {
@@ -193,7 +193,7 @@ Write-Output "logFile: $logFile"
 # echo out the current user
 # if OS is Linux
 # if OS is Windows, use $env:USERNAME
-if ($env:OS -eq "Windows_NT") {
+if ($IsWindows) {
   Write-Output "Current user: ${env:USERNAME}"
 }
 else {  
@@ -203,7 +203,7 @@ else {
 Write-Output "Current hostname: $(hostname)"
 # echo out the current pretty hostname
 # if OS is Linux, use hostnamectl --pretty
-if ($env:OS -eq "Windows_NT") {
+if ($IsWindows) {
   Write-Output "Current pretty hostname: $(hostname)"
 }
 else {
@@ -229,7 +229,7 @@ Write-Output "========================================"
 # Check if the module is installed
 # if OS is Windows, check for module Resolve-DnsName, otherwise check for Resolve-DnsNameCrossPlatform
 # if OS is Linux, check for module Resolve-DnsNameCrossPlatform
-if ($env:OS -eq "Windows_NT") {
+if ($IsWindows) {
   Write-Output "Checking if Resolve-DnsName module is installed..."
   $moduleName = "Resolve-DnsName"
   $moduleFound = Get-Module -ListAvailable -Name $moduleName
@@ -281,7 +281,7 @@ function Write-ActionLog {
 
 function Update-Hostname {
   # if OS is Linux
-  if ($env:OS -eq "Windows_NT") {
+  if ($IsWindows) {
     Write-Output "This script is not supported on Windows OS."
     Write-Output "Please run the script on Linux OS."
     Write-Output "Change the hostname manually."
@@ -306,7 +306,7 @@ function Update-Hostname {
         Write-Output "Pretty hostname cannot be empty. Please enter a valid pretty hostname."
         continue
       }
-      if ($env:OS -eq "Windows_NT") {
+      if ($IsWindows) {
         Write-Output "Changing hostname to $newHostname..."
         Write-ActionLog "Changing hostname to $newHostname"
         # Windows command to change hostname
@@ -335,7 +335,7 @@ function Update-Hostname {
 
 function Update-OperatingSystem {
   # if OS is Linux
-  if ($env:OS -eq "Windows_NT") {
+  if ($IsWindows) {
     # update the OS using Windows update commands    
     Write-Output "Updating Operating System..."
     Write-ActionLog "Updating Operating System"
@@ -381,7 +381,7 @@ function Update-OperatingSystem {
     Write-Output "Updating Operating System..."
     Write-ActionLog "Updating Operating System"
     try {
-      if ($env:OS -eq "Windows_NT") {
+      if ($IsWindows) {
         # Windows OS update commands
         Write-Output "Running Windows update commands..."
         # Example: Install-WindowsUpdate -AcceptAll -AutoReboot
@@ -449,7 +449,7 @@ function Update-DevOpsShieldApp {
   # set volume name if not provided
   # set according to the OS
   if ($Volume -eq "") {
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       $Volume = "/data"
     }
     else {
@@ -467,7 +467,7 @@ function Update-DevOpsShieldApp {
     Set-Location  "${rootFolder}/devops-shield"
     Write-ActionLog "Pulling latest images..."
     # if OS is Linux, use sudo to pull the images
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Pulling latest images..."
       docker pull $devopsShieldImage
       docker pull $sqlServerImage
@@ -479,7 +479,7 @@ function Update-DevOpsShieldApp {
     }
     Write-ActionLog "Stopping containers..."
     # if OS is Linux, use sudo to stop the containers
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Stopping containers..."
       docker compose down
     }
@@ -587,7 +587,7 @@ ${networkPrefix}    external: $external
 
     Write-ActionLog "Starting containers..."
     # if OS is Linux, use sudo to start the containers
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Starting containers..."
       docker compose up -d
     }
@@ -638,7 +638,7 @@ function Update-DefectDojoApp {
     }
     Set-Location "${rootFolder}/django-DefectDojo"
     # if OS is Windows
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       # set line endings to LF
       # set the git config to use LF line endings
       Write-Output "Setting git config to use LF line endings..."
@@ -649,7 +649,7 @@ function Update-DefectDojoApp {
     }
     Write-ActionLog "Pulling latest from git repo"
     # if OS is Linux, use sudo to pull the images
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Pulling latest from git repo ..."
       git pull
       #To check current line endings:
@@ -667,7 +667,7 @@ function Update-DefectDojoApp {
     }
     Write-ActionLog "Checking if your installed toolkit is compatible"
     # if OS is Linux, use sudo to check the compatibility
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Checking if your installed toolkit is compatible..."
       ./docker/docker-compose-check.sh
     }
@@ -677,7 +677,7 @@ function Update-DefectDojoApp {
     }
     Write-ActionLog "Building Docker images"
     # if OS is Linux, use sudo to build the images
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Building Docker images..."
       docker compose build
     }
@@ -687,7 +687,7 @@ function Update-DefectDojoApp {
     }
     Write-ActionLog "Stopping containers"
     # if OS is Linux, use sudo to stop the containers
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Stopping containers..."
       docker compose down
     }
@@ -734,7 +734,7 @@ ${networkPrefix}    external: $external
 
     Write-ActionLog "Starting containers..."
     # if OS is Linux, use sudo to start the containers
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Starting containers..."
       docker compose up -d
     }
@@ -753,7 +753,7 @@ ${networkPrefix}    external: $external
     while ($retryCount -lt $maxRetries) {
       Write-Output "Checking if the container $containerName is up..."
       # check if the container is up
-      if ($env:OS -eq "Windows_NT") {
+      if ($IsWindows) {
         $containerStatus = docker inspect -f '{{.State.Running}}' $containerName
       }
       else {
@@ -783,7 +783,7 @@ ${networkPrefix}    external: $external
     while ($retryCount -lt $maxRetries) {
       Write-Output "Checking if the logs show '$logMessage'..."
       # check if the logs show "Admin password:"
-      if ($env:OS -eq "Windows_NT") {
+      if ($IsWindows) {
         $logFound = docker logs $containerName | Select-String -Pattern $logMessage
       }
       else {
@@ -807,7 +807,7 @@ ${networkPrefix}    external: $external
     # get admin password
     Write-Output "Getting admin password..."
     Write-ActionLog "Getting admin password"
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Getting admin password..."
       #Check admin password
       docker compose logs initializer | Select-String -Pattern "Admin password:"
@@ -861,7 +861,7 @@ function Update-DependencyTrackApp {
     Set-Location "${rootFolder}/dependency-track"
     Write-ActionLog "Pulling latest images..."
     # if OS is Linux, use sudo to pull the images
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Pulling latest images..."
       docker pull dependencytrack/frontend
       docker pull dependencytrack/apiserver
@@ -873,7 +873,7 @@ function Update-DependencyTrackApp {
     }
     Write-ActionLog "Stopping containers..."
     # if OS is Linux, use sudo to stop the containers
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Stopping containers..."
       docker compose down
     }
@@ -935,7 +935,7 @@ ${networkPrefix}    external: $external
 
     Write-ActionLog "Starting containers..."
     # if OS is Linux, use sudo to start the containers
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Starting containers..."
       docker compose up -d
     }
@@ -953,7 +953,7 @@ ${networkPrefix}    external: $external
     while ($retryCount -lt $maxRetries) {
       Write-Output "Checking if the container $containerName is up..."
       # check if the container is up
-      if ($env:OS -eq "Windows_NT") {
+      if ($IsWindows) {
         $containerStatus = docker inspect -f '{{.State.Running}}' $containerName
       }
       else {
@@ -1015,7 +1015,7 @@ function Update-SonarQubeCommunity {
     Set-Location "${rootFolder}/sonarqube"
     Write-ActionLog "Pulling latest images..."
     # if OS is Linux, use sudo to pull the images
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Pulling latest images..."
       docker pull sonarqube:${SONARQUBE_VERSION}
       docker pull postgres:${POSTGRES_VERSION}
@@ -1027,7 +1027,7 @@ function Update-SonarQubeCommunity {
     }
     Write-ActionLog "Stopping containers..."
     # if OS is Linux, use sudo to stop the containers
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Stopping containers..."
       docker compose down
     }
@@ -1092,7 +1092,7 @@ ${networkPrefix}    external: $external
 
     Write-ActionLog "Starting containers..."
     # if OS is Linux, use sudo to start the containers
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Starting containers..."
       docker compose up -d
     }
@@ -1138,7 +1138,7 @@ function Install-NginxProxy {
     Write-ActionLog "Creating external network $common_network_name"
     # Check if the network already exists
     # if OS is Linux, use sudo to check the network
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Checking if network $common_network_name exists..."
       $networkExists = docker network ls --format '{{.Name}}' | Select-String -Pattern "^$common_network_name$"
     }
@@ -1153,7 +1153,7 @@ function Install-NginxProxy {
     else {
       Write-ActionLog "Creating network $common_network_name"    
       # if OS is Linux, use sudo to create the network
-      if ($env:OS -eq "Windows_NT") {
+      if ($IsWindows) {
         Write-Output "Creating network $common_network_name..."
         docker network create $common_network_name
       }
@@ -1178,7 +1178,7 @@ function Install-NginxProxy {
       Set-Location -Path "proxy"
       Write-ActionLog "Stopping Nginx Proxy containers..."
       # if OS is Linux, use sudo to stop the containers
-      if ($env:OS -eq "Windows_NT") {
+      if ($IsWindows) {
         Write-Output "Stopping Nginx Proxy containers..."
         docker compose down
       }
@@ -1193,7 +1193,7 @@ function Install-NginxProxy {
     }
     # check if the network already exists
     # if OS is Linux, use sudo to check the network
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Checking if network $common_network_name exists..."
       $networkExists = docker network ls --format '{{.Name}}' | Select-String -Pattern "^$common_network_name$"
     }
@@ -1208,7 +1208,7 @@ function Install-NginxProxy {
     else {
       Write-ActionLog "Creating network $common_network_name"    
       # if OS is Linux, use sudo to create the network
-      if ($env:OS -eq "Windows_NT") {
+      if ($IsWindows) {
         Write-Output "Creating network $common_network_name..."
         docker network create $common_network_name
       }
@@ -1227,7 +1227,7 @@ client_max_body_size 800m;
     $proxyConfContent | Out-File -FilePath "proxy.conf"
     # create folder $etcNginxFolder if it does not exist
     # set the path according to the OS
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       $etcNginxFolder = "C:/etc/nginx"
     }
     else {
@@ -1237,7 +1237,7 @@ client_max_body_size 800m;
       Write-Output "Creating $etcNginxFolder directory..."
       Write-ActionLog "Creating $etcNginxFolder directory..."
       # create the directory with sudo
-      if ($env:OS -eq "Windows_NT") {
+      if ($IsWindows) {
         Write-Output "Creating $etcNginxFolder directory..."
         mkdir -p $etcNginxFolder
       }
@@ -1249,7 +1249,7 @@ client_max_body_size 800m;
     }
     #Copy-Item -Path "proxy.conf" -Destination "/etc/nginx/proxy.conf" -Force
     # copy according to the OS
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Copying proxy.conf to $etcNginxFolder..."
       Write-ActionLog "Copying proxy.conf to $etcNginxFolder..."
       Copy-Item -Path "proxy.conf" -Destination "$etcNginxFolder/proxy.conf" -Force
@@ -1261,7 +1261,7 @@ client_max_body_size 800m;
     }
 
     # set docker socket path according to the OS
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       $dockerSocketPath = "//var/run/docker.sock"
     }
     else {
@@ -1313,7 +1313,7 @@ volumes:
 
     Write-ActionLog "Starting Nginx Proxy"
     # if OS is Linux, use sudo to start the containers
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       Write-Output "Starting Nginx Proxy..."
       docker compose up -d
     }
@@ -1362,7 +1362,7 @@ function Set-DevOpsShieldOneVm {
     Write-ActionLog "IP Address: $IP_ADDRESS"
 
     # set pretty hostname according to the OS
-    if ($env:OS -eq "Windows_NT") {
+    if ($IsWindows) {
       $prettyHostname = $(hostname)
     }
     else {
@@ -1434,7 +1434,7 @@ function Get-IpAddress {
       # or Resolve-DnsName for Windows      
       if ($dnsServer -eq "<NONE>" -or [string]::IsNullOrEmpty($dnsServer)) {
         Write-Output "Using default DNS server."
-        if ($env:OS -eq "Windows_NT") {
+        if ($IsWindows) {
           Write-Output "Using Resolve-DnsName for Windows."
           $dnsLookupResult = Resolve-DnsName -Name $currentName -ErrorAction SilentlyContinue
         }
@@ -1445,7 +1445,7 @@ function Get-IpAddress {
       }
       else {
         Write-Output "Using DNS server: $dnsServer"
-        if ($env:OS -eq "Windows_NT") {
+        if ($IsWindows) {
           Write-Output "Using Resolve-DnsName for Windows."
           $dnsLookupResult = Resolve-DnsName -Name $currentName -Server $dnsServer -ErrorAction SilentlyContinue
         }
@@ -1872,7 +1872,7 @@ function Update-AllAppsToNginxProxy {
       Write-Output "Creating firewall rules to allow port 80 and 443..."
       Write-ActionLog "Creating firewall rules to allow port 80 and 443..."
       # check if the OS is Linux or Windows
-      if ($env:OS -eq "Windows_NT") {
+      if ($IsWindows) {
         # check if the firewall is enabled
         $firewallEnabled = Get-NetFirewallProfile | Where-Object { $_.Enabled -eq "True" }
         if ($firewallEnabled) {
@@ -1952,7 +1952,7 @@ while ($true) {
       Write-Output "Running docker without sudo..."
       Write-ActionLog "Running docker without sudo"
       # only for Linux
-      if ($env:OS -eq "Windows_NT") {
+      if ($IsWindows) {
         Write-Output "This option is only available for Linux."
         Write-ActionLog "This option is only available for Linux."
         break
@@ -2039,7 +2039,7 @@ while ($true) {
       # Show docker volumes  
       # if OS is Linux, use sudo to show the containers      
       Write-ActionLog "Docker containers"   
-      if ($env:OS -eq "Windows_NT") {
+      if ($IsWindows) {
         Write-Output "Docker containers:"
         docker ps -a
       }
@@ -2050,7 +2050,7 @@ while ($true) {
       }
       # if OS is Linux, use sudo to show the volumes      
       Write-ActionLog "Docker volumes"   
-      if ($env:OS -eq "Windows_NT") {
+      if ($IsWindows) {
         Write-Output "Docker volumes:"
         docker volume ls
       }
@@ -2061,7 +2061,7 @@ while ($true) {
       }
       # if OS is Linux, use sudo to show the networks      
       Write-ActionLog "Docker networks"      
-      if ($env:OS -eq "Windows_NT") {
+      if ($IsWindows) {
         Write-Output "Docker networks:"
         docker network ls
       }
