@@ -8,8 +8,8 @@ Set-StrictMode -Version Latest
 # The script will check for the latest version of each application and update it if necessary
 
 # log file path depends on the OS
-# For Windows, the log file is stored in C:\DevOpsShieldOneVM_UpdateLog.txt
-# For Linux, the log file is stored in /var/log/DevOpsShieldOneVM_UpdateLog.txt
+# For Windows, the log file is stored in C:\DevOpsShieldOneVM_UpdateLog_${instanceName}.txt
+# For Linux, the log file is stored in /var/log/DevOpsShieldOneVM_UpdateLog_${instanceName}.txt
 # The script will create the log file if it does not exist
 # The script will append to the log file if it already exists
 
@@ -70,6 +70,22 @@ function  Remove-DockerNetwork {
   }
 }
 
+
+Write-Output "========================================"
+Write-Output "Welcome to the DevOps Shield One VM update script"
+Write-Output "This script will update the DevOps Shield One VM"
+Write-Output "========================================"
+#ask user for an instance name such as mcx-001
+$instanceName = Read-Host "Enter the instance name (e.g. mcx-001)"
+# check if the instance name is empty
+if ($instanceName -eq "") {
+  Write-Output "Instance name cannot be empty. Please enter a valid instance name."
+  exit
+}
+else {
+  Write-Output "Instance name: $instanceName"
+}
+
 # ensure script is run with sudo privileges
 if ($IsLinux) {
   # check if it's an azure vm if and only if the folder /var/lib/waagent exists
@@ -97,7 +113,7 @@ if ($IsLinux) {
       $rootFolder = "${HOME}"
       Write-Output "Setting root folder to $rootFolder"
       # set the log file path
-      $logFile = "${rootFolder}/DevOpsShieldOneVM_UpdateLog.txt"
+      $logFile = "${rootFolder}/DevOpsShieldOneVM_UpdateLog_${instanceName}.txt"
       Write-Output "Setting log file path to ${logFile}"      
     }
     else {
@@ -136,7 +152,7 @@ if ($IsLinux) {
       }
       Write-Output "Setting root folder to $rootFolder"
       # set the log file path
-      $logFile = "${rootFolder}/DevOpsShieldOneVM_UpdateLog.txt"
+      $logFile = "${rootFolder}/DevOpsShieldOneVM_UpdateLog_${instanceName}.txt"
       Write-Output "Setting log file path to ${logFile}"      
     }
   }
@@ -148,8 +164,8 @@ else {
   $isAzureVM = $false
   Write-Output "Setting root folder to ${HOME}/DevOpsShieldOneVM"
   $rootFolder = "${HOME}/DevOpsShieldOneVM"
-  Write-Output "Setting log file path to ${rootFolder}/DevOpsShieldOneVM_UpdateLog.txt"
-  $logFile = "${rootFolder}/DevOpsShieldOneVM_UpdateLog.txt"
+  Write-Output "Setting log file path to ${rootFolder}/DevOpsShieldOneVM_UpdateLog_${instanceName}.txt"
+  $logFile = "${rootFolder}/DevOpsShieldOneVM_UpdateLog_${instanceName}.txt"
   # check if the folder exists, if not create it
   if (-not (Test-Path -Path $rootFolder)) {
     Write-Output "Creating folder $rootFolder..."
@@ -460,11 +476,11 @@ function Update-DevOpsShieldApp {
   Write-ActionLog "Volume name: $Volume"
   try {
     # create folder if it does not exist
-    if (-not (Test-Path -Path "${rootFolder}/devops-shield")) {
-      Write-Output "Creating folder ${rootFolder}/devops-shield..."
-      New-Item -ItemType Directory -Path "${rootFolder}/devops-shield"
+    if (-not (Test-Path -Path "${rootFolder}/devops-shield-${instanceName}")) {
+      Write-Output "Creating folder ${rootFolder}/devops-shield-${instanceName} ..."
+      New-Item -ItemType Directory -Path "${rootFolder}/devops-shield-${instanceName}"
     }
-    Set-Location  "${rootFolder}/devops-shield"
+    Set-Location  "${rootFolder}/devops-shield-${instanceName}"
     Write-ActionLog "Pulling latest images..."
     # if OS is Linux, use sudo to pull the images
     if ($IsWindows) {
@@ -629,14 +645,14 @@ function Update-DefectDojoApp {
   Write-ActionLog "Updating Defect Dojo Application"
   try {
     # create folder if it does not exist
-    if (-not (Test-Path -Path "${rootFolder}/django-DefectDojo")) {
-      Write-Output "Creating folder ${rootFolder}/django-DefectDojo..."
+    if (-not (Test-Path -Path "${rootFolder}/django-DefectDojo-${instanceName}")) {
+      Write-Output "Creating folder ${rootFolder}/django-DefectDojo-${instanceName} ..."
       # by git clone
       Write-Output "Cloning Defect Dojo repository..."
       Write-ActionLog "Cloning Defect Dojo repository"      
-      git clone https://github.com/DefectDojo/django-DefectDojo "${rootFolder}/django-DefectDojo"	  
+      git clone https://github.com/DefectDojo/django-DefectDojo "${rootFolder}/django-DefectDojo-${instanceName}"	  
     }
-    Set-Location "${rootFolder}/django-DefectDojo"
+    Set-Location "${rootFolder}/django-DefectDojo-${instanceName}"
     # if OS is Windows
     if ($IsWindows) {
       # set line endings to LF
@@ -744,11 +760,11 @@ ${networkPrefix}    external: $external
     }
     
     Write-Output "Waiting for containers to start..."
-    # loop until the containers are up: especially django-defectdojo-initializer-1 container
+    # loop until the containers are up: especially django-defectdojo-${instanceName}-initializer-1 container
     # actually loop until the logs show "Admin password:"
     $maxRetries = 30
     $retryCount = 0
-    $containerName = "django-defectdojo-initializer-1"
+    $containerName = "django-defectdojo-${instanceName}-initializer-1"
     $containerStatus = ""
     while ($retryCount -lt $maxRetries) {
       Write-Output "Checking if the container $containerName is up..."
@@ -854,11 +870,11 @@ function Update-DependencyTrackApp {
     Write-Output "IP address: $IP_ADDRESS"
 
     # create folder if it does not exist
-    if (-not (Test-Path -Path "${rootFolder}/dependency-track")) {
-      Write-Output "Creating folder ${rootFolder}/dependency-track..."
-      New-Item -ItemType Directory -Path "${rootFolder}/dependency-track"
+    if (-not (Test-Path -Path "${rootFolder}/dependency-track-${instanceName}")) {
+      Write-Output "Creating folder ${rootFolder}/dependency-track-${instanceName} ..."
+      New-Item -ItemType Directory -Path "${rootFolder}/dependency-track-${instanceName}"
     }
-    Set-Location "${rootFolder}/dependency-track"
+    Set-Location "${rootFolder}/dependency-track-${instanceName}"
     Write-ActionLog "Pulling latest images..."
     # if OS is Linux, use sudo to pull the images
     if ($IsWindows) {
@@ -945,10 +961,10 @@ ${networkPrefix}    external: $external
     }
     Write-Output "Waiting for containers to start..."
     # loop until the containers are up
-    # actually loop until container dependency-track-dtrack-frontend-1 is up
+    # actually loop until container dependency-track-${instanceName}-dtrack-frontend-1 is up
     $maxRetries = 30
     $retryCount = 0
-    $containerName = "dependency-track-dtrack-frontend-1"
+    $containerName = "dependency-track-${instanceName}-dtrack-frontend-1"
     $containerStatus = ""
     while ($retryCount -lt $maxRetries) {
       Write-Output "Checking if the container $containerName is up..."
@@ -1008,11 +1024,11 @@ function Update-SonarQubeCommunity {
   Write-ActionLog "Updating SonarQube"
   try {
     # create folder if it does not exist
-    if (-not (Test-Path -Path "${rootFolder}/sonarqube")) {
-      Write-Output "Creating folder ${rootFolder}/sonarqube..."
-      New-Item -ItemType Directory -Path "${rootFolder}/sonarqube"
+    if (-not (Test-Path -Path "${rootFolder}/sonarqube-${instanceName}")) {
+      Write-Output "Creating folder ${rootFolder}/sonarqube-${instanceName} ..."
+      New-Item -ItemType Directory -Path "${rootFolder}/sonarqube-${instanceName}"
     }
-    Set-Location "${rootFolder}/sonarqube"
+    Set-Location "${rootFolder}/sonarqube-${instanceName}"
     Write-ActionLog "Pulling latest images..."
     # if OS is Linux, use sudo to pull the images
     if ($IsWindows) {
@@ -1390,7 +1406,7 @@ function Set-DevOpsShieldOneVm {
 
     # Format JSON nicely
     $jsonConfigData = $configData | ConvertTo-Json -Depth 4
-    $configFilePath = "$rootFolder/DevOpsShieldOneVM_Config.json"
+    $configFilePath = "$rootFolder/DevOpsShieldOneVM_Config_${instanceName}.json"
     $jsonConfigData | Out-File -FilePath $configFilePath -Encoding utf8
 
     Write-Output "Configuration data:"
@@ -1555,7 +1571,7 @@ function Test-VMConfiguration {
   Write-ActionLog "Testing VM Configuration"
   try {
     # Load the configuration file
-    $configFilePath = "$rootFolder/DevOpsShieldOneVM_Config.json"
+    $configFilePath = "$rootFolder/DevOpsShieldOneVM_Config_${instanceName}.json"
 
     if (Test-Path -Path $configFilePath) {
       $configData = Get-Content -Path $configFilePath | ConvertFrom-Json
@@ -1673,7 +1689,7 @@ function Update-AllAppsToNginxProxy {
     # Call the update functions for each application  
     
     # first ensure that config file is created and has been tested with status true
-    $configFilePath = "$rootFolder/DevOpsShieldOneVM_Config.json"
+    $configFilePath = "$rootFolder/DevOpsShieldOneVM_Config_${instanceName}.json"
     if (Test-Path -Path $configFilePath) {
       $configData = Get-Content -Path $configFilePath | ConvertFrom-Json
       if ($configData.Tested -eq $false) {
@@ -1738,7 +1754,7 @@ function Update-AllAppsToNginxProxy {
 
       # can delete default network if it exists
       # check if the network exists
-      Remove-DockerNetwork -networkName "devops-shield_default"
+      Remove-DockerNetwork -networkName "devops-shield-${instanceName}_default"
 
       # press enter to continue
       Read-Host "Press Enter to continue..."
@@ -1810,7 +1826,7 @@ function Update-AllAppsToNginxProxy {
 
       # can delete default network if it exists
       # check if the network exists
-      Remove-DockerNetwork -networkName "dependency-track_default"  
+      Remove-DockerNetwork -networkName "dependency-track-${instanceName}_default"  
 
       # press enter to continue
       Read-Host "Press Enter to continue..."
@@ -1848,7 +1864,7 @@ function Update-AllAppsToNginxProxy {
 
       # can delete default network if it exists
       # check if the network exists
-      Remove-DockerNetwork -networkName "sonarqube_default"
+      Remove-DockerNetwork -networkName "sonarqube-${instanceName}_default"
 
       # press enter to continue
       Read-Host "Press Enter to continue..."
@@ -2040,12 +2056,12 @@ while ($true) {
       Write-ActionLog "Script exited by user"
       Write-Output "Log file can be found at $logFile"
       Write-Output "Type 'cat $logFile' to see the actions taken"
-      Write-Output "You can view th VM configuration file at $rootFolder/DevOpsShieldOneVM_Config.json"
+      Write-Output "You can view th VM configuration file at $rootFolder/DevOpsShieldOneVM_Config_${instanceName}.json"
       # Show the contents of the configuration file
       Write-Output "Configuration file contents:"
       # check if it exists
-      if (Test-Path -Path "$rootFolder/DevOpsShieldOneVM_Config.json") {
-        Get-Content -Path "$rootFolder/DevOpsShieldOneVM_Config.json"
+      if (Test-Path -Path "$rootFolder/DevOpsShieldOneVM_Config_${instanceName}.json") {
+        Get-Content -Path "$rootFolder/DevOpsShieldOneVM_Config_${instanceName}.json"
       }
       else {
         Write-Output "Configuration file not found."
