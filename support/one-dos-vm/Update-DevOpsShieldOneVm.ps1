@@ -1864,8 +1864,24 @@ function Update-AllAppsToNginxProxy {
       # Test the firewall rules
       Write-Output "From another machine, test the port 80 and 443 connectivity to the hostname $hostname"
       Write-Output "Test the port 80 and 443 connectivity to the hostname $hostname"
-      Test-NetConnection -ComputerName $hostname -Port 80
-      Test-NetConnection -ComputerName $hostname -Port 443
+      Write-ActionLog "Test the port 80 and 443 connectivity to the hostname $hostname"
+      # Test the firewall rules
+      # check if the OS is Linux or Windows
+      if ($IsWindows) {
+        Write-Output "Testing firewall rules on Windows..."
+        Write-ActionLog "Testing firewall rules on Windows..."
+        # Test the firewall rules
+        Test-NetConnection -ComputerName $hostname -Port 80
+        Test-NetConnection -ComputerName $hostname -Port 443
+      }
+      else {
+        Write-Output "Testing firewall rules on Linux..."
+        Write-ActionLog "Testing firewall rules on Linux..."
+        # Test the firewall rules
+        # need to set the firewall rules for Linux manually
+        # sudo ufw allow 80/tcp
+        # sudo ufw allow 443/tcp
+      }
       Write-Output "Firewall test completed."
       Write-ActionLog "Firewall test completed"
       # create a firewall rule to allow port 80 and 443
