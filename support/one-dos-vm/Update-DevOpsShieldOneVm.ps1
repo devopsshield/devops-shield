@@ -13,6 +13,16 @@ Set-StrictMode -Version Latest
 # The script will create the log file if it does not exist
 # The script will append to the log file if it already exists
 
+
+function Write-ActionLog {
+  param (
+    [string]$message
+  )
+  $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+  $logMessage = "$timestamp - $message"
+  Add-Content -Path $logFile -Value $logMessage
+}
+
 function Get-MachineIpAddress {
 
   if ($IsWindows) {
@@ -70,229 +80,279 @@ function  Remove-DockerNetwork {
   }
 }
 
+function Get-FirstUnusedPort {
+  param (
+    [int]$StartPort = 3000
+  )
 
-Write-Output "========================================"
-Write-Output "Welcome to the DevOps Shield One VM update script"
-Write-Output "This script will update the DevOps Shield One VM"
-Write-Output "========================================"
-#ask user for an instance name such as mcx-001
-$instanceName = Read-Host "Enter the instance name (e.g. mcx-001)"
-# check if the instance name is empty
-if ($instanceName -eq "") {
-  Write-Output "Instance name cannot be empty. Please enter a valid instance name."
-  exit
+  $activePorts = Get-NetTCPConnection -State Listen | Select-Object -ExpandProperty LocalPort
+  $port = $StartPort
+
+  while ($activePorts -contains $port) {
+    $port++
+  }
+
+  return $port
 }
-else {
-  Write-Output "Instance name: $instanceName"
-}
 
-# ensure script is run with sudo privileges
-if ($IsLinux) {
-  # check if it's an azure vm if and only if the folder /var/lib/waagent exists
-  # if azure vm, set the variable $isAzureVM to true
-  if (Test-Path -Path "/var/lib/waagent") {
-    Write-Output "This is an Azure VM."
-    # set the variable $isAzureVM to true
-    $isAzureVM = $true
-  }
-  else {
-    Write-Output "This is not an Azure VM."
-    # set the variable $isAzureVM to false
-    $isAzureVM = $false
-  }
+function Initialize-Script {
+  param (
+    [int]$StartPortHttp = 10081,
+    [int]$StartPortHttps = 10443
+  )
 
-  if ($(whoami) -ne "root") {
-    # echo setting the variable $isRootUser to false
-    Write-Output "Running as non-root user ${env:USER}"
-    $isRootUser = $false
-
-    # if this is an azure vm, this is acceptable
-    if ($isAzureVM) {
-      Write-Output "Running as non-root user ${env:USER} on Azure VM"
-      # set rootFolder
-      $rootFolder = "${HOME}"
-      Write-Output "Setting root folder to $rootFolder"
-      # set the log file path
-      $logFile = "${rootFolder}/DevOpsShieldOneVM_UpdateLog_${instanceName}.txt"
-      Write-Output "Setting log file path to ${logFile}"      
-    }
-    else {
-      Write-Output "Running as non-root user ${env:USER} on non-Azure VM"
-      Write-Output "This script must be run as root user. Please run the script with sudo."        
-      Write-Output "Please run with: sudo pwsh Update-DevOpsShieldOneVm.ps1"
-      Write-Output "Exiting script."
-      exit
-    }
-  }
-  else {
-    Write-Output "Running as root user"
-    $isRootUser = $true
-
-    # if this is an azure vm, this is NOT acceptable
-    if ($isAzureVM) {
-      Write-Output "Running as root user ${env:USER} on Azure VM"
-      # not allowed exiting script
-      Write-Output "This script must not be run as root user on Azure VM. Please run the script with a non-root user."
-      Write-Output "Please run with: pwsh Update-DevOpsShieldOneVm.ps1"
-      Write-Output "Exiting script."
-      exit
-    }
-    else {
-      Write-Output "Running as root user ${env:USER} on non-Azure VM"
-      # set rootFolder
-      # find the home directory of the first non-root user
-      $homeDir = Get-ChildItem -Path /home | Where-Object { $_.Name -ne "root" } | Select-Object -First 1
-      if ($homeDir) {
-        $rootFolder = "/home/$($homeDir.Name)"
-      }
-      else {
-        # if no non-root user found, set rootFolder to $HOME
-        Write-Output "No non-root user found. Setting root folder to $HOME"
-        $rootFolder = "${HOME}"
-      }
-      Write-Output "Setting root folder to $rootFolder"
-      # set the log file path
-      $logFile = "${rootFolder}/DevOpsShieldOneVM_UpdateLog_${instanceName}.txt"
-      Write-Output "Setting log file path to ${logFile}"      
-    }
-  }
-}
-else {
-  # should be running on Windows
-  Write-Output "This is a Windows VM."
-  # set the variable $isAzureVM to false
-  $isAzureVM = $false
-  Write-Output "Setting root folder to ${HOME}/DevOpsShieldOneVM"
-  $rootFolder = "${HOME}/DevOpsShieldOneVM"
-  Write-Output "Setting log file path to ${rootFolder}/DevOpsShieldOneVM_UpdateLog_${instanceName}.txt"
-  $logFile = "${rootFolder}/DevOpsShieldOneVM_UpdateLog_${instanceName}.txt"
-  # check if the folder exists, if not create it
-  if (-not (Test-Path -Path $rootFolder)) {
-    Write-Output "Creating folder $rootFolder..."
-    New-Item -ItemType Directory -Path $rootFolder
-  }
-  else {
-    Write-Output "Folder $rootFolder already exists."
-  }
-  # Ensure script is run with admin privileges
-  if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Output "This script must be run as administrator. Please run the script with admin privileges."
-    Write-Output "Please run with: Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File $PSCommandPath'"
-    Write-Output "Exiting script."
+  # return hash table with the following values
+  # instanceName, rootFolder, logFile, common_network_name, isAzureVM, isRootUser, IP_ADDRESS, externalIP
+  #initialize the return hash table
+  $returnHashTable = @{}
+ 
+  Write-Output "========================================"
+  Write-Output "Welcome to the DevOps Shield One VM update script"
+  Write-Output "This script will update the DevOps Shield One VM"
+  Write-Output "========================================"
+  #ask user for an instance name such as mcx-001
+  $instanceName = Read-Host "Enter the instance name (e.g. mcx-001)"
+  # check if the instance name is empty
+  if ($instanceName -eq "") {
+    Write-Output "Instance name cannot be empty. Please enter a valid instance name."
     exit
   }
   else {
-    Write-Output "Running as administrator."
-    $isRootUser = $true
+    Write-Output "Instance name: $instanceName"
   }
-}
 
-# get the current location
-$initialLocation = Get-Location
-Write-Output "Current location: $initialLocation"
+  # ensure script is run with sudo privileges
+  if ($IsLinux) {
+    # check if it's an azure vm if and only if the folder /var/lib/waagent exists
+    # if azure vm, set the variable $isAzureVM to true
+    if (Test-Path -Path "/var/lib/waagent") {
+      Write-Output "This is an Azure VM."
+      # set the variable $isAzureVM to true
+      $isAzureVM = $true
+    }
+    else {
+      Write-Output "This is not an Azure VM."
+      # set the variable $isAzureVM to false
+      $isAzureVM = $false
+    }
 
-# echo out vars so far
-$common_network_name = "nginx-proxy"
-$POSTGRES_VERSION = "16" # for SonarQube
-$SONARQUBE_VERSION = "community" # latest community version
-$devopsShieldImage = "devopsshield/devopsshield:latest" # "devopsshield/devopsshield-enterprise:latest"
+    if ($(whoami) -ne "root") {
+      # echo setting the variable $isRootUser to false
+      Write-Output "Running as non-root user ${env:USER}"
+      $isRootUser = $false
 
-Write-Output "========================================"
-Write-Output "Common network name: $common_network_name"
-Write-Output "POSTGRES_VERSION: $POSTGRES_VERSION"
-Write-Output "SONARQUBE_VERSION: $SONARQUBE_VERSION"
-Write-Output "devopsShieldImage: $devopsShieldImage"
-Write-Output "rootFolder: $rootFolder"
-Write-Output "isAzureVM: $isAzureVM"
-Write-Output "isRootUser: $isRootUser"
-Write-Output "logFile: $logFile"
-# echo out the current user
-# if OS is Linux
-# if OS is Windows, use $env:USERNAME
-if ($IsWindows) {
-  Write-Output "Current user: ${env:USERNAME}"
-}
-else {  
-  Write-Output "Current user: ${env:USER}"
-}
-# echo out the current hostname
-Write-Output "Current hostname: $(hostname)"
-# echo out the current pretty hostname
-# if OS is Linux, use hostnamectl --pretty
-if ($IsWindows) {
-  Write-Output "Current pretty hostname: $(hostname)"
-}
-else {
-  Write-Output "Current pretty hostname: $(hostnamectl --pretty)"
-}
-# echo out the current IP address
-# if OS is Linux, use hostname -I | cut -d ' ' -f1
-$IP_ADDRESS = Get-MachineIpAddress
-Write-Output "Current IP address: $IP_ADDRESS"
-# echo out the current external IP address
-# get the external IP address using ifconfig.me
-$externalIP = (Invoke-WebRequest -uri "http://ifconfig.me/ip").Content.Trim()
-Write-Output "Current external IP address: $externalIP"
-# give HOME directory
-Write-Output "HOME directory: $HOME"
-# echo out the current date and time
-Write-Output "Current date and time: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")"
-# echo out the current date and time in UTC
-Write-Output "Current date and time in UTC: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss" -AsUTC)"
-Write-Output "========================================"
+      # if this is an azure vm, this is acceptable
+      if ($isAzureVM) {
+        Write-Output "Running as non-root user ${env:USER} on Azure VM"
+        # set rootFolder
+        $rootFolder = "${HOME}"
+        Write-Output "Setting root folder to $rootFolder"
+        # set the log file path
+        $logFile = "${rootFolder}/DevOpsShieldOneVM_UpdateLog_${instanceName}.txt"
+        Write-Output "Setting log file path to ${logFile}"      
+      }
+      else {
+        Write-Output "Running as non-root user ${env:USER} on non-Azure VM"
+        Write-Output "This script must be run as root user. Please run the script with sudo."        
+        Write-Output "Please run with: sudo pwsh Update-DevOpsShieldOneVm.ps1"
+        Write-Output "Exiting script."
+        exit
+      }
+    }
+    else {
+      Write-Output "Running as root user"
+      $isRootUser = $true
 
-# Requires PowerShell Module Resolve-DnsNameCrossPlatform
-# Check if the module is installed
-# if OS is Windows, check for module Resolve-DnsName, otherwise check for Resolve-DnsNameCrossPlatform
-# if OS is Linux, check for module Resolve-DnsNameCrossPlatform
-if ($IsWindows) {
-  Write-Output "Checking if Resolve-DnsName module is installed..."
-  $moduleName = "Resolve-DnsName"
-  $moduleFound = Get-Module -ListAvailable -Name $moduleName
-
-  $moduleFound = Get-InstalledModule -Name $moduleName
-  # verify if the module is installed
-  if ($moduleFound) {
-    Write-Output "Module $moduleName is installed."
-    Write-Output "Module version: $($moduleFound.Version)"
-    Write-Output "Module Found:"
-    Write-Output $moduleFound
+      # if this is an azure vm, this is NOT acceptable
+      if ($isAzureVM) {
+        Write-Output "Running as root user ${env:USER} on Azure VM"
+        # not allowed exiting script
+        Write-Output "This script must not be run as root user on Azure VM. Please run the script with a non-root user."
+        Write-Output "Please run with: pwsh Update-DevOpsShieldOneVm.ps1"
+        Write-Output "Exiting script."
+        exit
+      }
+      else {
+        Write-Output "Running as root user ${env:USER} on non-Azure VM"
+        # set rootFolder
+        # find the home directory of the first non-root user
+        $homeDir = Get-ChildItem -Path /home | Where-Object { $_.Name -ne "root" } | Select-Object -First 1
+        if ($homeDir) {
+          $rootFolder = "/home/$($homeDir.Name)"
+        }
+        else {
+          # if no non-root user found, set rootFolder to $HOME
+          Write-Output "No non-root user found. Setting root folder to $HOME"
+          $rootFolder = "${HOME}"
+        }
+        Write-Output "Setting root folder to $rootFolder"
+        # set the log file path
+        $logFile = "${rootFolder}/DevOpsShieldOneVM_UpdateLog_${instanceName}.txt"
+        Write-Output "Setting log file path to ${logFile}"      
+      }
+    }
   }
   else {
-    Write-Output "Module $moduleName is not installed."
-    Write-Output "Installing module $moduleName..."
-    Install-Module -Name $moduleName -Force -Scope CurrentUser
-    Write-Output "Module $moduleName installed."
+    # should be running on Windows
+    Write-Output "This is a Windows VM."
+    # set the variable $isAzureVM to false
+    $isAzureVM = $false
+    Write-Output "Setting root folder to ${HOME}/DevOpsShieldOneVM"
+    $rootFolder = "${HOME}/DevOpsShieldOneVM"
+    Write-Output "Setting log file path to ${rootFolder}/DevOpsShieldOneVM_UpdateLog_${instanceName}.txt"
+    $logFile = "${rootFolder}/DevOpsShieldOneVM_UpdateLog_${instanceName}.txt"
+    # check if the folder exists, if not create it
+    if (-not (Test-Path -Path $rootFolder)) {
+      Write-Output "Creating folder $rootFolder..."
+      New-Item -ItemType Directory -Path $rootFolder
+    }
+    else {
+      Write-Output "Folder $rootFolder already exists."
+    }
+    # Ensure script is run with admin privileges
+    if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+      Write-Output "This script must be run as administrator. Please run the script with admin privileges."
+      Write-Output "Please run with: Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File $PSCommandPath'"
+      Write-Output "Exiting script."
+      exit
+    }
+    else {
+      Write-Output "Running as administrator."
+      $isRootUser = $true
+    }
   }
-}
-else {
-  Write-Output "Checking if Resolve-DnsNameCrossPlatform module is installed..."
-  $moduleName = "Resolve-DnsNameCrossPlatform"
-  $moduleFound = Get-Module -ListAvailable -Name $moduleName
 
-  $moduleFound = Get-InstalledModule -Name $moduleName
-  # verify if the module is installed
-  if ($moduleFound) {
-    Write-Output "Module $moduleName is installed."
-    Write-Output "Module version: $($moduleFound.Version)"
-    Write-Output "Module Found:"
-    Write-Output $moduleFound
+  # get the current location
+  $initialLocation = Get-Location
+  Write-Output "Current location: $initialLocation"
+
+  # echo out vars so far
+  $common_network_name = "nginx-proxy"
+  $POSTGRES_VERSION = "16" # for SonarQube
+  $SONARQUBE_VERSION = "community" # latest community version
+  $devopsShieldImage = "devopsshield/devopsshield:latest" # "devopsshield/devopsshield-enterprise:latest"
+
+  # set the default values for the variables
+  $startPort1 = $StartPortHttp
+  $unusedPort1 = Get-FirstUnusedPort -StartPort $startPort1
+  Write-Output "First unused port above $startPort1 is: $unusedPort1"
+  Write-ActionLog "First unused port above $startPort1 is: $unusedPort1"
+  $startPort2 = $StartPortHttps
+  $unusedPort2 = Get-FirstUnusedPort -StartPort $startPort2
+  Write-Output "First unused port above $startPort2 is: $unusedPort2"
+  Write-ActionLog "First unused port above $startPort2 is: $unusedPort2"
+
+  Write-Output "========================================"
+  Write-Output "Common network name: $common_network_name"
+  Write-Output "POSTGRES_VERSION: $POSTGRES_VERSION"
+  Write-Output "SONARQUBE_VERSION: $SONARQUBE_VERSION"
+  Write-Output "devopsShieldImage: $devopsShieldImage"
+  Write-Output "rootFolder: $rootFolder"
+  Write-Output "isAzureVM: $isAzureVM"
+  Write-Output "isRootUser: $isRootUser"
+  Write-Output "logFile: $logFile"
+  # echo out the current user
+  # if OS is Linux
+  # if OS is Windows, use $env:USERNAME
+  if ($IsWindows) {
+    Write-Output "Current user: ${env:USERNAME}"
+  }
+  else {  
+    Write-Output "Current user: ${env:USER}"
+  }
+  # echo out the current hostname
+  Write-Output "Current hostname: $(hostname)"
+  # echo out the current pretty hostname
+  # if OS is Linux, use hostnamectl --pretty
+  if ($IsWindows) {
+    Write-Output "Current pretty hostname: $(hostname)"
   }
   else {
-    Write-Output "Module $moduleName is not installed."
-    Write-Output "Installing module $moduleName..."
-    Install-Module -Name $moduleName -Force -Scope CurrentUser
-    Write-Output "Module $moduleName installed."
+    Write-Output "Current pretty hostname: $(hostnamectl --pretty)"
   }
+  # echo out the current IP address
+  # if OS is Linux, use hostname -I | cut -d ' ' -f1
+  $IP_ADDRESS = Get-MachineIpAddress
+  Write-Output "Current IP address: $IP_ADDRESS"
+  # echo out the current external IP address
+  # get the external IP address using ifconfig.me
+  $externalIP = (Invoke-WebRequest -uri "http://ifconfig.me/ip").Content.Trim()
+  Write-Output "Current external IP address: $externalIP"
+  # give HOME directory
+  Write-Output "HOME directory: $HOME"
+  # echo out the current date and time
+  Write-Output "Current date and time: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")"
+  # echo out the current date and time in UTC
+  Write-Output "Current date and time in UTC: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss" -AsUTC)"
+  Write-Output "========================================"
+
+  $returnHashTable = @{
+    instanceName        = $instanceName
+    rootFolder          = $rootFolder
+    logFile             = $logFile
+    common_network_name = $common_network_name
+    isAzureVM           = $isAzureVM
+    isRootUser          = $isRootUser
+    IP_ADDRESS          = $IP_ADDRESS
+    externalIP          = $externalIP
+    unusedPort1         = $unusedPort1
+    unusedPort2         = $unusedPort2
+    devopsShieldImage   = $devopsShieldImage
+    SONARQUBE_VERSION   = $SONARQUBE_VERSION
+    POSTGRES_VERSION    = $POSTGRES_VERSION
+    initialLocation     = $initialLocation
+  }
+
+  # return the values
+  return $returnHashTable
 }
 
-function Write-ActionLog {
-  param (
-    [string]$message
-  )
-  $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-  $logMessage = "$timestamp - $message"
-  Add-Content -Path $logFile -Value $logMessage
+function Install-RequiredModules {
+ 
+  # Requires PowerShell Module Resolve-DnsNameCrossPlatform
+  # Check if the module is installed
+  # if OS is Windows, check for module Resolve-DnsName, otherwise check for Resolve-DnsNameCrossPlatform
+  # if OS is Linux, check for module Resolve-DnsNameCrossPlatform
+  if ($IsWindows) {
+    Write-Output "Checking if Resolve-DnsName module is installed..."
+    $moduleName = "Resolve-DnsName"
+    $moduleFound = Get-Module -ListAvailable -Name $moduleName
+
+    $moduleFound = Get-InstalledModule -Name $moduleName
+    # verify if the module is installed
+    if ($moduleFound) {
+      Write-Output "Module $moduleName is installed."
+      Write-Output "Module version: $($moduleFound.Version)"
+      Write-Output "Module Found:"
+      Write-Output $moduleFound
+    }
+    else {
+      Write-Output "Module $moduleName is not installed."
+      Write-Output "Installing module $moduleName..."
+      Install-Module -Name $moduleName -Force -Scope CurrentUser
+      Write-Output "Module $moduleName installed."
+    }
+  }
+  else {
+    Write-Output "Checking if Resolve-DnsNameCrossPlatform module is installed..."
+    $moduleName = "Resolve-DnsNameCrossPlatform"
+    $moduleFound = Get-Module -ListAvailable -Name $moduleName
+
+    $moduleFound = Get-InstalledModule -Name $moduleName
+    # verify if the module is installed
+    if ($moduleFound) {
+      Write-Output "Module $moduleName is installed."
+      Write-Output "Module version: $($moduleFound.Version)"
+      Write-Output "Module Found:"
+      Write-Output $moduleFound
+    }
+    else {
+      Write-Output "Module $moduleName is not installed."
+      Write-Output "Installing module $moduleName..."
+      Install-Module -Name $moduleName -Force -Scope CurrentUser
+      Write-Output "Module $moduleName installed."
+    }
+  }
 }
 
 function Update-Hostname {
@@ -506,7 +566,7 @@ function Update-DevOpsShieldApp {
 
     @"
 services:
-  ${containerName}:
+  ${containerName}-${instanceName}:
     image: $devopsShieldImage
     restart: always
     environment:
@@ -532,10 +592,10 @@ services:
     ${portPrefix}ports:
     ${portPrefix}  - "${Port}:8080"
     volumes:
-      - dos_data_sqlite:${Volume}
+      - dos_data_sqlite_${instanceName}:${Volume}
 
 volumes:
-  dos_data_sqlite:
+  dos_data_sqlite_${instanceName}:
 
 ${networkPrefix}networks:
 ${networkPrefix}  default:
@@ -545,7 +605,7 @@ ${networkPrefix}    external: $external
 
     @"
 services:
-  ${containerName}:
+  ${containerName}-${instanceName}:
     image: $devopsShieldImage
     restart: always
     environment:
@@ -571,9 +631,9 @@ services:
     ${portPrefix}ports:
     ${portPrefix}  - "${Port}:8080"
     depends_on:
-      - ${sqlServerContainerName}
+      - ${sqlServerContainerName}-${instanceName}
 
-  ${sqlServerContainerName}:
+  ${sqlServerContainerName}-${instanceName}:
     image: $sqlServerImage
     restart: always
     environment:
@@ -582,10 +642,10 @@ services:
     ports:
       - "${SqlPort}:1433"
     volumes:
-      - dos_data_mssql:/var/opt/mssql
+      - dos_data_mssql_${instanceName}:/var/opt/mssql
 
 volumes:
-  dos_data_mssql:
+  dos_data_mssql_${instanceName}:
 
 ${networkPrefix}networks:
 ${networkPrefix}  default:
@@ -635,8 +695,36 @@ function Update-DefectDojoApp {
     [string]$VIRTUAL_HOST = "",
     [string]$VIRTUAL_PORT = "8080",
     [string]$LETSENCRYPT_HOST = "",
-    [string]$NGINX_METRICS_ENABLED = "false"
+    [string]$NGINX_METRICS_ENABLED = "false",
+    [int]$DD_PORT_START = 10081,
+    [int]$DD_PORT_END = 10443,
+    [string]$DD_PORT = "",
+    [string]$DD_TLS_PORT = ""
   )
+
+  # set the default values for DD_PORT and DD_TLS_PORT if not provided
+  if ($DD_PORT -eq "") {
+    Write-Output "DD_PORT is not provided. Will set to first unused port above $DD_PORT_START"
+    Write-ActionLog "DD_PORT is not provided. Will set to first unused port above $DD_PORT_START"
+    $DD_PORT = Get-FirstUnusedPort -StartPort $DD_PORT_START
+    Write-Output "DD_PORT set to $DD_PORT"    
+    Write-ActionLog "DD_PORT set to $DD_PORT"
+  }
+  if ($DD_TLS_PORT -eq "") {
+    Write-Output "DD_TLS_PORT is not provided. Will set to first unused port above $DD_PORT_END"
+    Write-ActionLog "DD_TLS_PORT is not provided. Will set to first unused port above $DD_PORT_END"
+    $DD_TLS_PORT = Get-FirstUnusedPort -StartPort $DD_PORT_END
+    Write-Output "DD_TLS_PORT set to $DD_TLS_PORT"    
+    Write-ActionLog "DD_TLS_PORT set to $DD_TLS_PORT"
+  }
+
+  #set environment variables
+  Write-Output "Setting environment variables..." 
+  $env:DD_PORT = $DD_PORT  
+  $env:DD_TLS_PORT = $DD_TLS_PORT
+  Write-ActionLog "Setting environment variables"
+  Write-Output "DD_PORT: $DD_PORT"
+  Write-Output "DD_TLS_PORT: $DD_TLS_PORT"
 
   # for windows, you may need to run under WSL2
   # or follow https://github.com/DefectDojo/django-DefectDojo/discussions/9379
@@ -681,6 +769,54 @@ function Update-DefectDojoApp {
       Write-Output "Pulling latest from git repo ..."
       sudo git pull
     }
+
+    Write-Output "Showing the contents of the docker-compose.yml file"
+    Get-Content -Path "docker-compose.yml"
+    # find and replace the following lines in the docker-compose.yml file
+    # 1. find container name "nginx:" and replace with "nginx-${instanceName}:"
+    # 2. find container name "uwsgi:" and replace with "uwsgi-${instanceName}:"
+    # 3. find container name "celerybeat:" and replace with "celerybeat-${instanceName}:"
+    # 4. find container name "celeryworker:" and replace with "celeryworker-${instanceName}:"
+    # 5. find container name "postgres:" and replace with "postgres-${instanceName}:"
+    # 6. find container name "redis:" and replace with "redis-${instanceName}:"
+    # 7. find container name "initializer:" and replace with "initializer-${instanceName}:"
+    # 8. find volume name "defectdojo_postgres:" and replace with "defectdojo_postgres_${instanceName}:"
+    # 9. find volume name "defectdojo_redis:" and replace with "defectdojo_redis_${instanceName}:"
+    # 10. find volume name "defectdojo_media:" and replace with "defectdojo_media_${instanceName}:"
+
+    $currentDockerComposeFileContent = Get-Content -Path "docker-compose.yml"
+    $updatedDockerComposeFileContent = $currentDockerComposeFileContent -replace "nginx:", "nginx-${instanceName}:"
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "uwsgi:", "uwsgi-${instanceName}:"
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "celerybeat:", "celerybeat-${instanceName}:"
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "celeryworker:", "celeryworker-${instanceName}:"
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "postgres:", "postgres-${instanceName}:"
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "redis:", "redis-${instanceName}:"
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "initializer:", "initializer-${instanceName}:"
+    # volumes
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "defectdojo_postgres:", "defectdojo_postgres_${instanceName}:"
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "defectdojo_redis:", "defectdojo_redis_${instanceName}:"
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "defectdojo_media:", "defectdojo_media_${instanceName}:"
+    # depends on
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "- uwsgi", "- uwsgi-${instanceName}"
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "- postgres", "- postgres-${instanceName}"
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "- redis", "- redis-${instanceName}"
+    # now fix image pull
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "image: postgres-${instanceName}:", "image: postgres:"
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "image: redis-${instanceName}:", "image: redis:"
+
+    # fix host issues
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "DD_UWSGI_HOST:-uwsgi", "DD_UWSGI_HOST:-uwsgi-${instanceName}"
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "DD_DATABASE_HOST:-postgres", "DD_DATABASE_HOST:-postgres-${instanceName}"
+
+    # fix No such transport for redis
+    $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "DD_CELERY_BROKER_URL:-redis-${instanceName}://", "DD_CELERY_BROKER_URL:-redis://"
+
+    # write the updated content to the docker-compose.yml file
+    $updatedDockerComposeFileContent | Out-File -FilePath "docker-compose.yml" -Encoding utf8
+    Write-Output "Updated docker-compose.yml file"
+    Write-Output "Showing the contents of the docker-compose.yml file"
+    Get-Content -Path "docker-compose.yml"
+
     Write-ActionLog "Checking if your installed toolkit is compatible"
     # if OS is Linux, use sudo to check the compatibility
     if ($IsWindows) {
@@ -714,7 +850,7 @@ function Update-DefectDojoApp {
 
     @"
 services:
-  nginx:
+  nginx-${instanceName}:
     restart: always
     ${environmentPrefix}environment:
     ${environmentPrefix}  VIRTUAL_HOST: $VIRTUAL_HOST
@@ -722,19 +858,19 @@ services:
     ${environmentPrefix}  LETSENCRYPT_HOST: $LETSENCRYPT_HOST
     ${environmentPrefix}  NGINX_METRICS_ENABLED: `"$NGINX_METRICS_ENABLED`"
 
-  uwsgi:
+  uwsgi-${instanceName}:
     restart: always
 
-  celerybeat:
+  celerybeat-${instanceName}:
     restart: always
 
-  celeryworker:
+  celeryworker-${instanceName}:
     restart: always
 
-  postgres:
+  postgres-${instanceName}:
     restart: always
 
-  redis:
+  redis-${instanceName}:
     restart: always
 
 ${networkPrefix}networks:
@@ -764,7 +900,7 @@ ${networkPrefix}    external: $external
     # actually loop until the logs show "Admin password:"
     $maxRetries = 30
     $retryCount = 0
-    $containerName = "django-defectdojo-${instanceName}-initializer-1"
+    $containerName = "django-defectdojo-${instanceName}-initializer-${instanceName}-1"
     $containerStatus = ""
     while ($retryCount -lt $maxRetries) {
       Write-Output "Checking if the container $containerName is up..."
@@ -826,11 +962,11 @@ ${networkPrefix}    external: $external
     if ($IsWindows) {
       Write-Output "Getting admin password..."
       #Check admin password
-      docker compose logs initializer | Select-String -Pattern "Admin password:"
+      docker compose logs "initializer-$instanceName" | Select-String -Pattern "Admin password:"
     }
     else {
       Write-Output "Getting admin password..."
-      sudo docker compose logs initializer | Select-String -Pattern "Admin password:"
+      sudo docker compose logs "initializer-$instanceName" | Select-String -Pattern "Admin password:"
     }
     Write-Output "Defect Dojo Application update completed."
     Write-ActionLog "Defect Dojo Application update completed"
@@ -901,10 +1037,10 @@ function Update-DependencyTrackApp {
 
     @"
 volumes:
-  dependency-track:
+  dependency-track-${instanceName}:
 
 services:
-  dtrack-apiserver:
+  dtrack-apiserver-${instanceName}:
     image: dependencytrack/apiserver
     deploy:
       resources:
@@ -921,13 +1057,13 @@ services:
     ${portPrefix}ports:
     ${portPrefix}  - "8081:8080"
     volumes:
-      - "dependency-track:/data"
+      - "dependency-track-${instanceName}:/data"
     restart: unless-stopped
 
-  dtrack-frontend:
+  dtrack-frontend-${instanceName}:
     image: dependencytrack/frontend
     depends_on:
-      - dtrack-apiserver
+      - dtrack-apiserver-${instanceName}
     environment:
       ${environmentPrefix}VIRTUAL_HOST: $VIRTUAL_HOST_FRONTEND
       ${environmentPrefix}VIRTUAL_PORT: $VIRTUAL_PORT_FRONTEND
@@ -960,11 +1096,11 @@ ${networkPrefix}    external: $external
       sudo docker compose up -d
     }
     Write-Output "Waiting for containers to start..."
-    # loop until the containers are up
-    # actually loop until container dependency-track-${instanceName}-dtrack-frontend-1 is up
+    # loop until the containers are up #dependency-track-mcx-001-dtrack-frontend-mcx-001-1
+    # actually loop until container dependency-track-${instanceName}-dtrack-frontend-${instanceName}-1 is up
     $maxRetries = 30
     $retryCount = 0
-    $containerName = "dependency-track-${instanceName}-dtrack-frontend-1"
+    $containerName = "dependency-track-${instanceName}-dtrack-frontend-${instanceName}-1"
     $containerStatus = ""
     while ($retryCount -lt $maxRetries) {
       Write-Output "Checking if the container $containerName is up..."
@@ -1054,28 +1190,28 @@ function Update-SonarQubeCommunity {
 
     @"
 services:
-  sonarqube:
+  sonarqube-${instanceName}:
     image: sonarqube:$SONARQUBE_VERSION
     restart: always
     depends_on:
-      - sonar_db
+      - sonar_db-${instanceName}
     environment:
       ${environmentPrefix}VIRTUAL_HOST: $VIRTUAL_HOST
       ${environmentPrefix}VIRTUAL_PORT: $VIRTUAL_PORT
       ${environmentPrefix}LETSENCRYPT_HOST: $LETSENCRYPT_HOST
-      SONAR_JDBC_URL: jdbc:postgresql://sonar_db:5432/sonar
+      SONAR_JDBC_URL: jdbc:postgresql://sonar_db-${instanceName}:5432/sonar
       SONAR_JDBC_USERNAME: sonar
       SONAR_JDBC_PASSWORD: sonar
     ${portPrefix}ports:
     ${portPrefix}  - "9001:9000"
     volumes:
-      - sonarqube_conf:/opt/sonarqube/conf
-      - sonarqube_data:/opt/sonarqube/data
-      - sonarqube_extensions:/opt/sonarqube/extensions
-      - sonarqube_logs:/opt/sonarqube/logs
-      - sonarqube_temp:/opt/sonarqube/temp
+      - sonarqube_conf_${instanceName}:/opt/sonarqube/conf
+      - sonarqube_data_${instanceName}:/opt/sonarqube/data
+      - sonarqube_extensions_${instanceName}:/opt/sonarqube/extensions
+      - sonarqube_logs_${instanceName}:/opt/sonarqube/logs
+      - sonarqube_temp_${instanceName}:/opt/sonarqube/temp
 
-  sonar_db:
+  sonar_db-${instanceName}:
     image: postgres:$POSTGRES_VERSION
     restart: always
     environment:
@@ -1083,17 +1219,17 @@ services:
       POSTGRES_PASSWORD: sonar
       POSTGRES_DB: sonar
     volumes:
-      - sonar_db:/var/lib/postgresql
-      - sonar_db_data_${POSTGRES_VERSION}:/var/lib/postgresql/data
+      - sonar_db_${instanceName}:/var/lib/postgresql
+      - sonar_db_data_${POSTGRES_VERSION}_${instanceName}:/var/lib/postgresql/data
 
 volumes:
-  sonarqube_conf:
-  sonarqube_data:
-  sonarqube_extensions:
-  sonarqube_logs:
-  sonarqube_temp:
-  sonar_db:
-  sonar_db_data_${POSTGRES_VERSION}:
+  sonarqube_conf_${instanceName}:
+  sonarqube_data_${instanceName}:
+  sonarqube_extensions_${instanceName}:
+  sonarqube_logs_${instanceName}:
+  sonarqube_temp_${instanceName}:
+  sonar_db_${instanceName}:
+  sonar_db_data_${POSTGRES_VERSION}_${instanceName}:
 
 ${networkPrefix}networks:
 ${networkPrefix}  default:
@@ -1975,6 +2111,36 @@ function Show-Menu {
   Write-Output "11. Exit"
   Write-Output "-----------------------------------"
 }
+
+############# Main Script Execution #############
+
+$allOutput = Initialize-Script
+
+# initializedValues is a hashtable - last element in the array
+$initializedValues = $allOutput[-1]
+
+$rootFolder = $($initializedValues.rootFolder)
+$common_network_name = $($initializedValues.common_network_name)
+$instanceName = $($initializedValues.instanceName)
+$logFile = $($initializedValues.logFile)
+$devopsShieldImage = $($initializedValues.devopsShieldImage)
+$SONARQUBE_VERSION = $($initializedValues.SONARQUBE_VERSION)
+$POSTGRES_VERSION = $($initializedValues.POSTGRES_VERSION)
+$initialLocation = $($initializedValues.initialLocation)
+
+Write-Output "DevOps Shield One VM Script"
+Write-Output "-----------------------------------"
+Write-Output "Root Folder: $rootFolder"
+Write-Output "Common Network Name: $common_network_name"
+Write-Output "Instance Name: $instanceName" 
+Write-Output "Log File: $logFile"
+Write-Output "DevOps Shield Image: $devopsShieldImage"
+Write-Output "SonarQube Version: $SONARQUBE_VERSION"
+Write-Output "Postgres Version: $POSTGRES_VERSION"
+Write-Output "Initial Location: $initialLocation"
+Write-Output "-----------------------------------"
+
+Install-RequiredModules
 
 while ($true) {
   Show-Menu
