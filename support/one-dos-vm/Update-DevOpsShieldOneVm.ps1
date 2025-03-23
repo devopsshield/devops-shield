@@ -23,6 +23,26 @@ function Write-ActionLog {
   Add-Content -Path $logFile -Value $logMessage
 }
 
+function Get-SystemInfo {
+  # check if the OS is Windows or Linux
+  if ($IsWindows) {
+    Write-Output "This is a Windows VM."
+    # get free memory
+    Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object FreePhysicalMemory, FreeVirtualMemory
+    # get disk space
+    Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3" | Select-Object DeviceID, VolumeName, FreeSpace, Size
+    return $true
+  }
+  else {
+    Write-Output "This is a Linux VM."
+    # get free memory
+    free -h
+    # get disk space
+    df -h
+    return $true
+  }  
+}
+
 function Get-MachineIpAddress {
 
   if ($IsWindows) {
@@ -85,14 +105,47 @@ function Get-FirstUnusedPort {
     [int]$StartPort = 3000
   )
 
-  $activePorts = Get-NetTCPConnection -State Listen | Select-Object -ExpandProperty LocalPort
-  $port = $StartPort
+  if ($IsWindows) {
 
-  while ($activePorts -contains $port) {
-    $port++
+    $activePorts = Get-NetTCPConnection -State Listen | Select-Object -ExpandProperty LocalPort
+    $port = $StartPort
+
+    while ($activePorts -contains $port) {
+      $port++
+    }
+  }
+  else {
+    $activePorts = sudo netstat -tuln | Select-String -Pattern "LISTEN"   
+    $uniqueActivePorts = @()
+    # get active ports
+    foreach ($line in $activePorts) {
+      $port = $line -replace '.*:(\d+).*', '$1'
+      Write-Output "Active port: $port"
+      # add to the list of active ports if not already present
+      if ($activePorts -notcontains $port) {
+        Write-Output "Adding port $port to the list of active ports"
+        $uniqueActivePorts += [int]$port
+      }
+      else {
+        Write-Output "Port $port already in the list of active ports"
+      }
+    }
+    Write-Output "Unique active ports: $uniqueActivePorts"
+    Write-ActionLog "Active ports: $uniqueActivePorts"
+    $port = $StartPort
+
+    while ($uniqueActivePorts -contains $port) {
+      $port++
+    }
   }
 
-  return $port
+  Write-Output "First unused port: $port"
+  Write-ActionLog "First unused port: $port"
+  # return as hash table
+  $returnHashTable = @{}
+  $returnHashTable["port"] = $port
+
+  return $returnHashTable
 }
 
 function Initialize-Script {
@@ -233,14 +286,16 @@ function Initialize-Script {
   $devopsShieldImage = "devopsshield/devopsshield:latest" # "devopsshield/devopsshield-enterprise:latest"
 
   # set the default values for the variables
-  $startPort1 = $StartPortHttp
-  $unusedPort1 = Get-FirstUnusedPort -StartPort $startPort1
-  Write-Output "First unused port above $startPort1 is: $unusedPort1"
-  Write-ActionLog "First unused port above $startPort1 is: $unusedPort1"
-  $startPort2 = $StartPortHttps
-  $unusedPort2 = Get-FirstUnusedPort -StartPort $startPort2
-  Write-Output "First unused port above $startPort2 is: $unusedPort2"
-  Write-ActionLog "First unused port above $startPort2 is: $unusedPort2"
+  $unusedPortHttpOutput = Get-FirstUnusedPort -StartPort $startPortHttp
+  # get from last line of the output
+  $unusedPortHttp = $($unusedPortHttpOutput[-1].port)
+  Write-Output "First unused port above $startPortHttp is: $unusedPortHttp"
+  Write-ActionLog "First unused port above $startPortHttp is: $unusedPortHttp"
+  $unusedPortHttpsOutput = Get-FirstUnusedPort -StartPort $StartPortHttps
+  # get from last line of the output
+  $unusedPortHttps = $($unusedPortHttpsOutput[-1].port)
+  Write-Output "First unused port above $startPortHttps is: $unusedPortHttps"
+  Write-ActionLog "First unused port above $startPortHttps is: $unusedPortHttps"
 
   Write-Output "========================================"
   Write-Output "Common network name: $common_network_name"
@@ -295,8 +350,8 @@ function Initialize-Script {
     isRootUser          = $isRootUser
     IP_ADDRESS          = $IP_ADDRESS
     externalIP          = $externalIP
-    unusedPort1         = $unusedPort1
-    unusedPort2         = $unusedPort2
+    unusedPortHttp      = $unusedPortHttp  
+    unusedPortHttps     = $unusedPortHttps
     devopsShieldImage   = $devopsShieldImage
     SONARQUBE_VERSION   = $SONARQUBE_VERSION
     POSTGRES_VERSION    = $POSTGRES_VERSION
@@ -696,35 +751,55 @@ function Update-DefectDojoApp {
     [string]$VIRTUAL_PORT = "8080",
     [string]$LETSENCRYPT_HOST = "",
     [string]$NGINX_METRICS_ENABLED = "false",
-    [int]$DD_PORT_START = 10081,
-    [int]$DD_PORT_END = 10443,
+    [int]$DD_PORT_START_HTTP = 10081,
+    [int]$DD_PORT_START_HTTPS = 10443,
     [string]$DD_PORT = "",
     [string]$DD_TLS_PORT = ""
   )
 
   # set the default values for DD_PORT and DD_TLS_PORT if not provided
   if ($DD_PORT -eq "") {
-    Write-Output "DD_PORT is not provided. Will set to first unused port above $DD_PORT_START"
-    Write-ActionLog "DD_PORT is not provided. Will set to first unused port above $DD_PORT_START"
-    $DD_PORT = Get-FirstUnusedPort -StartPort $DD_PORT_START
+    Write-Output "DD_PORT is not provided. Will set to first unused port above $DD_PORT_START_HTTP"
+    Write-ActionLog "DD_PORT is not provided. Will set to first unused port above $DD_PORT_START_HTTP"
+    $DD_PORTOutput = Get-FirstUnusedPort -StartPort $DD_PORT_START_HTTP    
+    # get from last line of the output
+    $DD_PORT = $($DD_PORTOutput[-1].port)
     Write-Output "DD_PORT set to $DD_PORT"    
     Write-ActionLog "DD_PORT set to $DD_PORT"
   }
   if ($DD_TLS_PORT -eq "") {
-    Write-Output "DD_TLS_PORT is not provided. Will set to first unused port above $DD_PORT_END"
-    Write-ActionLog "DD_TLS_PORT is not provided. Will set to first unused port above $DD_PORT_END"
-    $DD_TLS_PORT = Get-FirstUnusedPort -StartPort $DD_PORT_END
+    Write-Output "DD_TLS_PORT is not provided. Will set to first unused port above $DD_PORT_START_HTTPS"
+    Write-ActionLog "DD_TLS_PORT is not provided. Will set to first unused port above $DD_PORT_START_HTTPS"
+    $DD_TLS_PORTOutput = Get-FirstUnusedPort -StartPort $DD_PORT_START_HTTPS
+    # get from last line of the output
+    $DD_TLS_PORT = $($DD_TLS_PORTOutput[-1].port)
     Write-Output "DD_TLS_PORT set to $DD_TLS_PORT"    
     Write-ActionLog "DD_TLS_PORT set to $DD_TLS_PORT"
   }
 
   #set environment variables
   Write-Output "Setting environment variables..." 
-  $env:DD_PORT = $DD_PORT  
-  $env:DD_TLS_PORT = $DD_TLS_PORT
-  Write-ActionLog "Setting environment variables"
-  Write-Output "DD_PORT: $DD_PORT"
-  Write-Output "DD_TLS_PORT: $DD_TLS_PORT"
+  # if OS is Linux, use sudo to set the environment variables
+  if ($IsWindows) {
+    Write-Output "Setting environment variables for Windows..."    
+    $env:DD_PORT = $DD_PORT  
+    $env:DD_TLS_PORT = $DD_TLS_PORT
+    Write-ActionLog "Setting environment variables for Windows..."
+    Write-Output "DD_PORT: $DD_PORT"
+    Write-Output "DD_TLS_PORT: $DD_TLS_PORT"
+  }
+  else {
+    Write-Output "Setting environment variables for Linux..."
+    $env:DD_PORT = "$DD_PORT"
+    $env:DD_TLS_PORT = "$DD_TLS_PORT"
+    #sudo export DD_PORT=$DD_PORT
+    #sudo export DD_TLS_PORT=$DD_TLS_PORT
+    printenv | Sort-Object
+    Write-ActionLog "Setting environment variables for Linux..."
+    Write-Output "DD_PORT: $DD_PORT"
+    Write-Output "DD_TLS_PORT: $DD_TLS_PORT"
+  }
+  
 
   # for windows, you may need to run under WSL2
   # or follow https://github.com/DefectDojo/django-DefectDojo/discussions/9379
@@ -810,6 +885,26 @@ function Update-DefectDojoApp {
 
     # fix No such transport for redis
     $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "DD_CELERY_BROKER_URL:-redis-${instanceName}://", "DD_CELERY_BROKER_URL:-redis://"
+
+    # additional hacks for Linux
+    if ($IsLinux) {
+      # hack to remove double -${instanceName} in the docker-compose.yml file
+      # do while docker-compose.yml file has -${instanceName}-${instanceName}
+      while ($updatedDockerComposeFileContent -match "-${instanceName}-${instanceName}") {
+        Write-Output "Removing double -${instanceName}-${instanceName} from docker-compose.yml file"
+        $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace "-${instanceName}-${instanceName}", "-${instanceName}"
+      }
+      # replace DD_PORT:-8080
+      $pattern = "DD_PORT:-\d+"
+      $replacement = "DD_PORT:-$DD_PORT"
+
+      # Replace the pattern with the new value
+      $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace $pattern, $replacement
+      # replace DD_TLS_PORT:-8443
+      $pattern = "DD_TLS_PORT:-\d+"
+      $replacement = "DD_TLS_PORT:-$DD_TLS_PORT"
+      $updatedDockerComposeFileContent = $updatedDockerComposeFileContent -replace $pattern, $replacement
+    }
 
     # write the updated content to the docker-compose.yml file
     $updatedDockerComposeFileContent | Out-File -FilePath "docker-compose.yml" -Encoding utf8
@@ -2100,11 +2195,11 @@ function Show-Menu {
   Write-Output " 0. Run docker without sudo"
   Write-Output " 1. Change hostname"
   Write-Output " 2. Update the DevOps Shield One VM Operating System"
-  Write-Output " 3. Update the DevOps Shield Application"
-  Write-Output " 4. Update the Defect Dojo Application"
-  Write-Output " 5. Update the Dependency Track Application"
-  Write-Output " 6. Update SonarQube Community"
-  Write-Output " 7. Install Nginx Proxy"
+  Write-Output " 3. Install or Update DevOps Shield Application"
+  Write-Output " 4. Install or Update Defect Dojo Application"
+  Write-Output " 5. Install or Update Dependency Track Application"
+  Write-Output " 6. Install or Update SonarQube Community"
+  Write-Output " 7. Install or Update Nginx Proxy"
   Write-Output " 8. Configure the DevOps Shield One VM"
   Write-Output " 9. Test VM Configuration"
   Write-Output "10. Update All Applications to Nginx Proxy"
@@ -2113,6 +2208,9 @@ function Show-Menu {
 }
 
 ############# Main Script Execution #############
+
+$sysInfo = Get-SystemInfo
+$sysInfo
 
 $allOutput = Initialize-Script
 
@@ -2127,6 +2225,8 @@ $devopsShieldImage = $($initializedValues.devopsShieldImage)
 $SONARQUBE_VERSION = $($initializedValues.SONARQUBE_VERSION)
 $POSTGRES_VERSION = $($initializedValues.POSTGRES_VERSION)
 $initialLocation = $($initializedValues.initialLocation)
+$unusedPortHttp = $($initializedValues.unusedPortHttp)
+$unusedPortHttps = $($initializedValues.unusedPortHttps)
 
 Write-Output "DevOps Shield One VM Script"
 Write-Output "-----------------------------------"
@@ -2138,6 +2238,8 @@ Write-Output "DevOps Shield Image: $devopsShieldImage"
 Write-Output "SonarQube Version: $SONARQUBE_VERSION"
 Write-Output "Postgres Version: $POSTGRES_VERSION"
 Write-Output "Initial Location: $initialLocation"
+Write-Output "Unused Port HTTP: $unusedPortHttp"
+Write-Output "Unused Port HTTPS: $unusedPortHttps"
 Write-Output "-----------------------------------"
 
 Install-RequiredModules
@@ -2156,6 +2258,9 @@ while ($true) {
         break
       }
       # Add the current user to the docker group
+      Write-Output "Adding user ${env:USER} to the docker group..."
+      Write-ActionLog "Adding user ${env:USER} to the docker group"
+      Write-Output "COMMAND: sudo usermod -aG docker ${env:USER}"
       sudo usermod -aG docker ${env:USER}
       Write-Warning "You need to log out and log back in for the changes to take effect."
     }
@@ -2178,7 +2283,9 @@ while ($true) {
     4 {
       if (Read-Host "Are you sure you want to update the Defect Dojo Application? (y/n)" -eq 'y') {
         Update-DefectDojoApp -rootFolder $rootFolder `
-          -common_network_name $common_network_name 
+          -common_network_name $common_network_name `
+          -DD_PORT $unusedPortHttp `
+          -DD_TLS_PORT $unusedPortHttps
       }
     }
     5 {
