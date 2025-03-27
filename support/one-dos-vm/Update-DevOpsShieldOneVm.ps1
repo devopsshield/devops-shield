@@ -1039,9 +1039,10 @@ ${networkPrefix}    external: $external
       }
     }
     if ($retryCount -eq $maxRetries) {
-      Write-Output "Container $containerName is not up after $maxRetries retries. Exiting script."
-      Write-ActionLog "Container $containerName is not up after $maxRetries retries. Exiting script."
-      exit
+      Write-Output "Container $containerName is not up after $maxRetries retries. Continuing..."
+      Write-ActionLog "Container $containerName is not up after $maxRetries retries. Continuing..."
+      # do not exit the script
+      # exit
     }
     Write-Output "Container $containerName is up."
     # now loop until the logs show "Admin password:"
@@ -1069,9 +1070,10 @@ ${networkPrefix}    external: $external
       }
     }
     if ($retryCount -eq $maxRetries) {
-      Write-Output "Logs do not show '$logMessage' after $maxRetries retries. Exiting script."
-      Write-ActionLog "Logs do not show '$logMessage' after $maxRetries retries. Exiting script."
-      exit
+      Write-Output "Container $containerName is not up after $maxRetries retries. Continuing..."
+      Write-ActionLog "Container $containerName is not up after $maxRetries retries. Continuing..."
+      # do not exit the script
+      # exit
     }
     # get admin password
     Write-Output "Getting admin password..."
@@ -1239,9 +1241,10 @@ ${networkPrefix}    external: $external
       }
     }
     if ($retryCount -eq $maxRetries) {
-      Write-Output "Container $containerName is not up after $maxRetries retries. Exiting script."
-      Write-ActionLog "Container $containerName is not up after $maxRetries retries. Exiting script."
-      exit
+      Write-Output "Container $containerName is not up after $maxRetries retries. Continuing..."
+      Write-ActionLog "Container $containerName is not up after $maxRetries retries. Continuing..."
+      # do not exit the script
+      # exit
     }
     Write-Output "Dependency-Track IS available at http://${IP_ADDRESS}:8082"
     Write-Output "Dependency-Track API is available at http://${IP_ADDRESS}:8081"
